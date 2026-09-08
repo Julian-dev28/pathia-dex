@@ -11,8 +11,8 @@ import {
 import { base } from 'wagmi/chains';
 import { TOKENS, bySymbol, EXPLORER } from '@/lib/chain';
 import { fetchQuote, type QuoteResponse, type ApiVenue } from '@/lib/api';
-import { toBase, sig, bps, addr } from '@/lib/format';
-import { buildSwap, approveTx, spenderFor, minOut, routeLabel, ERC20 } from '@/lib/execute';
+import { toBase, fromBase, sig, bps, addr } from '@/lib/format';
+import { buildSwap, approveTx, spenderFor, minOut, ERC20 } from '@/lib/execute';
 import { Disclaimer } from './Disclaimer';
 import { TokenSelect } from './TokenSelect';
 import { RoutePath } from './RoutePath';
@@ -177,9 +177,14 @@ export function Terminal() {
 
   const setMax = () => {
     if (balance === undefined) return;
+    // formatUnits, not the display formatter: `sig` rounds to significant
+    // figures and drops into scientific notation under 1e-7, which the amount
+    // parser rejects outright — so MAX on a dust balance silently stopped
+    // quoting. This is exact and always decimal.
+    //
     // No gas reserve is subtracted: the input is always an ERC-20, never native
     // ETH, so spending all of it still leaves the wallet able to pay fees.
-    setAmount(sig(balance as bigint, tokenIn, 12).replace(/,/g, ''));
+    setAmount(fromBase(balance as bigint, tokenIn));
   };
 
   const split = route?.split;

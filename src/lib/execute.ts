@@ -160,6 +160,3 @@ export function buildSwap(
       };
   }
 }
-
-/** Human-readable route, e.g. "WETH → USDC → DAI". */
-export const routeLabel = (venue: Venue): string => venue.path.map((t) => t.symbol).join(' → ');

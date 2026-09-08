@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { TOKENS, bySymbol, EXPLORER, type Token } from '@/lib/chain';
+import { TOKENS, EXPLORER, type Token } from '@/lib/chain';
 import { sig, addr } from '@/lib/format';
 import { TokenSelect } from './TokenSelect';
 

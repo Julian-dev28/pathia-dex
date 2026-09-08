@@ -23,6 +23,7 @@ import {
   type V2State,
 } from '@/lib/quote';
 import { minOut } from '@/lib/execute';
+import { toBase, fromBase } from '@/lib/format';
 import { TOKENS, bySymbol } from '@/lib/chain';
 
 const WETH = bySymbol('WETH');
@@ -355,5 +356,29 @@ describe('token table', () => {
 
   it('looks tokens up case-insensitively', () => {
     expect(bySymbol('weth').address).toBe(WETH.address);
+  });
+});
+
+describe('amount parsing', () => {
+  it('accepts what formatUnits produces, including dust', () => {
+    // The MAX button fills the input with fromBase(balance). If toBase cannot
+    // read that back, MAX silently stops the quote — which is exactly what
+    // happened when MAX used the display formatter and it emitted "1.5e-7".
+    for (const raw of [1n, 12n, 10n ** 6n, 10n ** 18n, 123456789012345678n]) {
+      const text = fromBase(raw, WETH);
+      expect(text).not.toMatch(/e/i);
+      expect(toBase(text, WETH)).toBe(raw);
+    }
+  });
+
+  it('rejects junk rather than guessing', () => {
+    expect(toBase('', WETH)).toBe(0n);
+    expect(toBase('abc', WETH)).toBe(0n);
+    expect(toBase('1.2.3', WETH)).toBe(0n);
+    expect(toBase('1e18', WETH)).toBe(0n);
+  });
+
+  it('ignores thousands separators', () => {
+    expect(toBase('1,000', USDC)).toBe(1_000_000_000n);
   });
 });
