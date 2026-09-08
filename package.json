@@ -16,7 +16,8 @@
     "verify:tokens": "tsx scripts/verify-tokens.ts",
     "test:unit": "vitest run",
     "test:watch": "vitest",
-    "probe:venues": "tsx scripts/probe-venues.ts"
+    "probe:venues": "tsx scripts/probe-venues.ts",
+    "backtest": "tsx scripts/backtest.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.0",

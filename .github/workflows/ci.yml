@@ -35,6 +35,11 @@ jobs:
       # A wrong `decimals` is the most expensive, and just as cheap to catch.
       - run: npm run verify:addresses
       - run: npm run verify:tokens
+      # The candidate probe also reads router selectors out of deployed
+      # bytecode. If PancakeSwap ever migrates to a SwapRouter02-shaped router,
+      # the deadline flag in the deployment table becomes wrong and every
+      # Pancake swap starts reverting — this is where that would surface.
+      - run: npm run probe:venues
 
   contracts:
     name: Fork tests

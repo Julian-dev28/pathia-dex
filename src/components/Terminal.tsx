@@ -16,6 +16,7 @@ import { buildSwap, approveTx, spenderFor, minOut, ERC20 } from '@/lib/execute';
 import { Disclaimer } from './Disclaimer';
 import { TokenSelect } from './TokenSelect';
 import { RoutePath } from './RoutePath';
+import { LiveTape } from './LiveTape';
 
 const SLIPPAGE_CHOICES = [10, 30, 50, 100];
 
@@ -481,6 +482,8 @@ export function Terminal() {
           )}
         </section>
       </div>
+
+      <LiveTape inSym={inSym} outSym={outSym} amount={amount} tokenOut={tokenOut} />
 
       {/* ── venue comparison ────────────────────────────────────────── */}
       <section className="section">

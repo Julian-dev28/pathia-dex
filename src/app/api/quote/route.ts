@@ -17,6 +17,7 @@ import { client, quoteLadder, ladder, bestRoute, interpolate, isMultiHop } from 
 import { hopCostInToken, gasPriceWei, GAS_PER_EXTRA_HOP } from '@/lib/gas';
 import { toBase, jsonSafe } from '@/lib/format';
 import { quoteCache, quoteLimit, clientKey, QUOTE_TTL_MS } from '@/lib/serve';
+import { log, metrics } from '@/lib/log';
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,9 @@ const MAX_AMOUNT_DIGITS = 30;
 
 export async function GET(req: Request) {
   const limit = quoteLimit.check(clientKey(req));
+  metrics.inc('quote.requests');
   if (!limit.ok) {
+    metrics.inc('quote.rate_limited');
     return NextResponse.json(
       { error: 'rate limit exceeded — slow down' },
       {
@@ -109,18 +112,23 @@ export async function GET(req: Request) {
     });
 
     if (!value) {
+      metrics.inc('quote.no_liquidity');
       return NextResponse.json(
         { error: `no liquidity found for ${inSym}/${outSym} on Base` },
         { status: 404 },
       );
     }
 
+    const elapsed = Date.now() - started;
+    metrics.inc(hit ? 'quote.cache_hit' : 'quote.cache_miss');
+    if (!hit) metrics.observeLatency(elapsed);
+
     return NextResponse.json(
       jsonSafe({
         ...(value as object),
         quotedAt: Date.now(),
         expiresAt: Date.now() + QUOTE_TTL_MS,
-        latencyMs: Date.now() - started,
+        latencyMs: elapsed,
         cached: hit,
       }),
       {
@@ -132,6 +140,8 @@ export async function GET(req: Request) {
     );
   } catch (e) {
     const message = e instanceof Error ? e.message : 'quote failed';
+    metrics.inc('quote.errors');
+    log.error('quote.failed', { pair: `${inSym}/${outSym}`, amount: amountStr, message });
     // Unknown-token errors are the caller's fault, not ours, and returning 500
     // for them makes a typo look like an outage.
     const known = TOKENS.some((t) => t.symbol === inSym) && TOKENS.some((t) => t.symbol === outSym);

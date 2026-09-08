@@ -124,6 +124,93 @@ cleverness.** cbETH/USDC at +1726bp means the direct pools are shallow enough
 that spreading the trade is worth seventeen percent. That is a statement about
 cbETH on Base.
 
+## Does it actually route well? Replaying real trades
+
+The fork tests prove the quote matches what the chain would pay. They say
+nothing about whether the route it picks is any *good* — for that you need a
+counterfactual, and the honest one is already on-chain. Every swap someone
+executed on Base is a decision made with real money by someone who had their own
+router.
+
+`npm run backtest` reads the Swap logs, takes each trade, re-quotes it **as it
+stood one block earlier**, and compares.
+
+Current dataset — 2 runs, 6,263 swaps observed, 47 replayed:
+
+| | |
+| --- | --- |
+| Median edge | **+1.0 bp** |
+| Better / equal / worse | **27 / 14 / 6** (57% better, 30% exact ties) |
+| Median win | +12 bp |
+| Median loss | −23 bp |
+| p10 – p90 | −1 … +39 bp |
+
+The shape is more interesting than the headline. The router **matches or beats
+87% of real trades**, and a third of the time it matches to the wei — it found
+the same venue the trader did, which on a deep pair is the correct answer rather
+than a missed opportunity. Losses are rare but larger than wins, which is what
+you would expect: the cases where somebody beat this router are the ones where
+they knew something it does not, such as a venue outside its table.
+
+Three biases are corrected for in the code rather than mentioned in a footnote:
+
+- **Quote at the parent block.** A trade's own swap is in the block it landed
+  in, so quoting at that height prices a pool it already moved. The state the
+  trader actually faced is the end of `block - 1`.
+- **Single-swap transactions only.** A Swap log that is one leg of somebody's
+  multi-hop route is not a complete trade, and comparing our whole route against
+  one leg of theirs would flatter this project enormously. Transactions with more
+  than one Swap log are discarded — that is why 6,263 observed becomes a far
+  smaller eligible set.
+- **Gross of gas on both sides.** We do not know what they paid, and our own
+  extra-hop cost is not netted out either, which if anything favours them.
+
+What it cannot correct for: *why* they routed as they did. A trade that looks
+beatable may have been a deliberate venue choice, an MEV-protected order, or one
+leg of an intent that settled elsewhere. The page says so.
+
+## Storage, scheduling and streaming
+
+The backtest needed somewhere to put results, which is where a project like this
+usually acquires a database and a credential. It does not have one.
+
+**The dataset is `data/backtest.jsonl`, committed to the repository.** A
+scheduled GitHub Action appends one line per run and pushes it. Git is the
+storage engine, the Action is the cron, and the commit is the audit trail. Every
+number the site publishes about routing quality is therefore traceable to the
+diff that introduced it — a stronger guarantee than a database nobody outside
+the deployment can query, and it costs nothing. `src/lib/dataset.ts` is
+deliberately shaped like the database call it would become if the dataset
+outgrew this.
+
+**`GET /api/stream` is server-sent events** — a re-quote pushed when a block
+actually changes the answer. SSE rather than WebSockets because the traffic is
+one-directional, reconnects are free, and there is no second protocol to run.
+Two things keep it from being a load generator: blocks are coalesced to at most
+one quote every six seconds, and an unchanged quote is not sent at all.
+
+Getting that second part right took two attempts. The first fingerprint included
+the block number, which always advances — so the check never fired and the
+stream pushed on every tick, which is the exact behaviour it exists to prevent.
+The second threw on `JSON.stringify` of a bigint and turned every tick into an
+error frame. Both are visible in the git history and both were caught by
+watching the actual stream rather than by reading the code.
+
+The tape is deliberately *not* what the trade form signs against. The form keeps
+its own quote with an explicit expiry, because a price that changes under the
+user between reading and clicking is how people get a fill they did not agree
+to.
+
+**Observability**: `GET /api/metrics` reports in-process counters and quote
+latency percentiles; `GET /api/health` returns 503 when the chain head goes
+stale. `GET /api/openapi.json` is the contract, hand-written because a generator
+can describe the shape but not the semantics — that `amountIn` is a base-unit
+integer as a string, or that 404 means "no pool" rather than "wrong URL".
+
+**Container**: a multi-stage `Dockerfile` producing a standalone runtime image
+with no sources, no dev dependencies and no root user, and a `HEALTHCHECK` that
+uses the chain-freshness endpoint rather than a bare liveness probe.
+
 ## Adding venues, and which ones are worth adding
 
 Every venue below is free: public contracts, public RPC, no key, no
@@ -213,13 +300,14 @@ pools it already quoted. The extra-hop cost is 70,000 gas, measured in
 
 | Suite | What it covers | Network |
 | --- | --- | --- |
-| `npm run test:unit` | 40 tests: constant-product maths, hop chaining, ladders, interpolation bounds, the splitter, gas-adjusted route choice, slippage floors, path encoding | none |
+| `npm run test:unit` | 58 tests: constant-product maths, hop chaining, ladders, interpolation bounds, the splitter, gas-adjusted route choice, slippage floors, path encoding, amount parsing, and the backtest statistics | none |
 | `contracts` — `Prediction.t.sol` | Off-chain prediction vs. realised fill, 11 cases, mainnet fork | fork |
 | `contracts` — `SplitRouter.t.sol` | Atomic split execution, approval hygiene, the call-proxy exploit | fork |
 | `contracts` — `GasProfile.t.sol` | The gas constants the router makes decisions with | fork |
 | `scripts/verify-addresses.sh` | Every hardcoded address still has bytecode | RPC |
 | `npm run verify:tokens` | Every token's on-chain symbol and decimals | RPC |
 | `npm run probe:venues` | Candidate venues: liquidity, derived fees, router selectors | RPC |
+| `npm run backtest` | Replays real Base swaps against the router, appends to the dataset | RPC |
 
 The unit tests deliberately use no network. The fork tests prove the quoter
 agrees with the chain; the unit tests prove the arithmetic behaves at the edges
@@ -293,6 +381,12 @@ for that is a paid endpoint via `RPC_URL`, not more code.
 - **Public RPC rate-limits.** Set `RPC_URL` for anything beyond casual use.
 - **Twelve tokens.** Adding more is a line in `src/lib/chain.ts`; discovery does
   not care.
+- **The backtest sample is small and recent.** Public RPC serves roughly three
+  thousand blocks of logs and a few thousand blocks of historical state, so each
+  run samples the last few hours. Depth accumulates across scheduled runs rather
+  than arriving in one pass.
+- **Metrics are per-instance.** In-process counters, so on serverless they
+  answer "is this instance healthy", not "how much traffic does the product get".
 - **No Uniswap V4.** Quotable today and measured by `npm run probe:venues`, but
   it settles through `UniversalRouter` with Permit2 rather than a router call,
   and this app does not quote what it cannot execute.
@@ -307,7 +401,11 @@ src/lib/chain.ts        every address, every venue, as data — V2 forks and V3 
 src/lib/execute.ts      calldata for each venue's router, single and multi-hop
 src/lib/gas.ts          gas priced in the output token, no oracle
 src/lib/serve.ts        cache with coalescing, rate limit
-src/app/api/            quote, venues, health
+src/lib/backtest.ts     log decoding, trade replay, summary statistics
+src/lib/dataset.ts      reads the committed backtest dataset
+src/lib/log.ts          structured logging and in-process metrics
+src/app/api/            quote, venues, stream (SSE), health, metrics, openapi
+data/backtest.jsonl     append-only dataset, written by the scheduled worker
 contracts/src           SplitRouter.sol — written, tested, not deployed
 contracts/test          prediction-vs-fill, split router, gas profile
 test/solver.test.ts     the maths, no network

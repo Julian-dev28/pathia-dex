@@ -1,0 +1,195 @@
+/**
+ * GET /api/openapi.json — the API contract, served from the code that implements it.
+ *
+ * Written by hand rather than generated. A generator would derive the schema
+ * from the types, which sounds better until you notice it can only describe the
+ * shape and not the semantics — that `amountIn` is a base-unit integer as a
+ * string because JSON has no bigint, or that a 404 means "no pool" rather than
+ * "wrong URL". Those are the parts a consumer actually needs.
+ */
+
+import { NextResponse } from 'next/server';
+import { TOKENS, CHAIN_ID } from '@/lib/chain';
+
+export const dynamic = 'force-dynamic';
+
+const bigintString = {
+  type: 'string',
+  pattern: '^[0-9]+$',
+  description: 'Base-unit integer as a decimal string. JSON has no bigint.',
+};
+
+export async function GET() {
+  return NextResponse.json({
+    openapi: '3.1.0',
+    info: {
+      title: 'Pathia DEX',
+      version: '0.2.0',
+      description:
+        'On-chain route solver for Base. Quotes every venue from pool state and solves the ' +
+        'optimal split. No authentication: every endpoint reads public chain state, and the ' +
+        'same calls work from anywhere. Rate limited to 120 requests per minute per IP.',
+      license: { name: 'MIT' },
+    },
+    servers: [{ url: '/', description: 'this deployment' }],
+    paths: {
+      '/api/quote': {
+        get: {
+          summary: 'Solve a route',
+          description:
+            'Quotes every discovered venue at a ladder of sizes, returns the best single ' +
+            'venue, the optimal split, and every venue curve behind the decision.',
+          parameters: [
+            {
+              name: 'in',
+              in: 'query',
+              schema: { type: 'string', enum: TOKENS.map((t) => t.symbol) },
+              example: 'WETH',
+            },
+            {
+              name: 'out',
+              in: 'query',
+              schema: { type: 'string', enum: TOKENS.map((t) => t.symbol) },
+              example: 'USDC',
+            },
+            {
+              name: 'amount',
+              in: 'query',
+              description: 'Human units of the input token, not base units.',
+              schema: { type: 'string' },
+              example: '1.5',
+            },
+          ],
+          responses: {
+            200: {
+              description: 'A solved route',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      blockNumber: bigintString,
+                      quotedAt: { type: 'integer', description: 'Unix ms when quoted.' },
+                      expiresAt: {
+                        type: 'integer',
+                        description:
+                          'Unix ms after which the interface refuses to sign this quote.',
+                      },
+                      cached: { type: 'boolean' },
+                      latencyMs: { type: 'integer' },
+                      route: {
+                        type: 'object',
+                        properties: {
+                          single: { $ref: '#/components/schemas/Route' },
+                          split: { $ref: '#/components/schemas/Route' },
+                          chosen: { type: 'string', enum: ['single', 'split'] },
+                          edgeBps: { type: 'number', description: 'Split advantage, gross.' },
+                          netEdgeBps: { type: 'number', description: 'Split advantage, net of gas.' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Unknown token, identical tokens, or an unparseable amount' },
+            404: { description: 'No pool quotes this pair on Base' },
+            429: { description: 'Rate limited. Retry-After header is set.' },
+          },
+        },
+      },
+      '/api/venues': {
+        get: {
+          summary: 'Pool inventory for a pair',
+          description:
+            'Every distinct pool the router would consider, including pools that only appear ' +
+            'mid-route on a two-hop path, with each pool’s ERC-20 balances.',
+          parameters: [
+            { name: 'in', in: 'query', schema: { type: 'string' } },
+            { name: 'out', in: 'query', schema: { type: 'string' } },
+          ],
+          responses: { 200: { description: 'Pools' }, 400: { description: 'Bad pair' } },
+        },
+      },
+      '/api/stream': {
+        get: {
+          summary: 'Live quotes (server-sent events)',
+          description:
+            'text/event-stream. Emits `open`, then a `quote` event whenever a new block ' +
+            'changes the answer, then `bye` at the ten-minute cap. Coalesced to at most one ' +
+            'quote every six seconds; unchanged quotes are not sent.',
+          parameters: [
+            { name: 'in', in: 'query', schema: { type: 'string' } },
+            { name: 'out', in: 'query', schema: { type: 'string' } },
+            { name: 'amount', in: 'query', schema: { type: 'string' } },
+          ],
+          responses: {
+            200: { description: 'An event stream', content: { 'text/event-stream': {} } },
+            429: { description: 'Rate limited' },
+          },
+        },
+      },
+      '/api/health': {
+        get: {
+          summary: 'Liveness and chain freshness',
+          description:
+            'Returns 503 when the chain head is more than 60 seconds old, which is the ' +
+            'failure a bare liveness check misses.',
+          responses: { 200: { description: 'Healthy' }, 503: { description: 'Degraded or down' } },
+        },
+      },
+      '/api/metrics': {
+        get: {
+          summary: 'In-process counters and quote latency percentiles',
+          responses: { 200: { description: 'Metrics for this instance only' } },
+        },
+      },
+    },
+    components: {
+      schemas: {
+        Route: {
+          type: 'object',
+          properties: {
+            amountIn: bigintString,
+            amountOut: bigintString,
+            gasEstimate: bigintString,
+            allocations: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  amountIn: bigintString,
+                  amountOut: bigintString,
+                  share: { type: 'number', description: 'Percent of the trade.' },
+                  venue: { $ref: '#/components/schemas/Venue' },
+                },
+              },
+            },
+          },
+        },
+        Venue: {
+          type: 'object',
+          description: 'A route through one protocol family; hops.length === path.length - 1.',
+          properties: {
+            id: { type: 'string' },
+            label: { type: 'string' },
+            family: { type: 'string', enum: ['v2', 'v3', 'aero'] },
+            path: { type: 'array', items: { $ref: '#/components/schemas/Token' } },
+            hops: { type: 'array', items: { type: 'object' } },
+            router: { type: 'string', description: 'Router that executes this route.' },
+          },
+        },
+        Token: {
+          type: 'object',
+          properties: {
+            symbol: { type: 'string' },
+            name: { type: 'string' },
+            address: { type: 'string', pattern: '^0x[a-fA-F0-9]{40}$' },
+            decimals: { type: 'integer' },
+          },
+        },
+      },
+    },
+    'x-chain': { chainId: CHAIN_ID, name: 'Base' },
+  });
+}

@@ -11,6 +11,7 @@ const NAV = [
   { href: '/', label: 'Terminal' },
   { href: '/depth', label: 'Depth' },
   { href: '/venues', label: 'Venues' },
+  { href: '/backtest', label: 'Backtest' },
   { href: '/docs', label: 'Docs' },
 ];
 

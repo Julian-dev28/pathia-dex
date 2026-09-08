@@ -374,3 +374,16 @@
   .route-row { grid-template-columns: 1fr; gap: 4px; }
   .seg { flex-wrap: wrap; }
 }
+
+/* ── live tape ────────────────────────────────────────────────────────── */
+
+.tape-line {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  padding: 7px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--rule);
+}
+.tape-line:last-child { border-bottom: 0; }
+/* The direction arrow is a fixed column so the price above it does not shift
+   sideways when a tick changes direction. */
+.tape-line > span:nth-child(3) { width: 12px; text-align: center; }
