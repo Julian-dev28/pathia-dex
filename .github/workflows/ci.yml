@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  app:
+    name: Build and typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+
+  addresses:
+    name: Verify on-chain addresses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Every hardcoded address must still have bytecode on Base. A wrong
+      # address is the cheapest bug to ship and the cheapest one to catch.
+      - run: ./scripts/verify-addresses.sh
+
+  contracts:
+    name: Fork tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: npm ci
+      # forge-std is not vendored, so fetch it here rather than committing a
+      # dependency into the repo.
+      - run: forge install foundry-rs/forge-std --no-git
+        working-directory: contracts
+      # The fixture pins a block, and public Base endpoints do not serve deep
+      # history, so it is regenerated against head rather than committed stale.
+      - run: npm run predict
+      - run: forge test -vv
+        working-directory: contracts
+        env:
+          BASE_RPC_URL: https://mainnet.base.org

@@ -1,0 +1,200 @@
+/* ============================================================================
+   base-router — additions to the pathia design system
+   ----------------------------------------------------------------------------
+   Only what the router needs and pathia does not already have: the trade form,
+   the split-allocation bar, and the depth chart frame. Everything else — rules,
+   tables, badges, figures — comes from pathia.css unchanged, and any colour
+   below is a token from it rather than a new value.
+   ========================================================================= */
+
+/* ── trade form ───────────────────────────────────────────────────────── */
+
+/* An amount field is the one place on the page where the input IS the number,
+   so it is set at figure size rather than control size. */
+.amount-field {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.amount-field:focus-within { border-color: var(--ink-3); }
+.amount-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 28px;
+  font-weight: 450;
+  letter-spacing: -0.024em;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.amount-input::placeholder { color: var(--ink-3); }
+/* Number inputs bring spinners that make a price field look like a quantity
+   picker, and scroll-to-change is a genuine hazard on a trade form. */
+.amount-input::-webkit-outer-spin-button,
+.amount-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.token-select {
+  appearance: none;
+  padding: 6px 26px 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius);
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%),
+                    linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.token-select:hover { border-color: var(--ink-3); }
+
+.swap-grid { display: grid; gap: 10px; }
+
+/* The direction flip sits on the rule between the two legs, the way it does on
+   every trading form, so the pair reads as one control rather than two. */
+.flip-row { display: flex; align-items: center; gap: 12px; margin: 2px 0; }
+.flip-row::before,
+.flip-row::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+.flip-btn {
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  color: var(--ink-3);
+  background: var(--surface);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+.flip-btn:hover { color: var(--ink); border-color: var(--ink-3); }
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--paper);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent-ink); border-color: var(--accent-ink); }
+.btn-primary:disabled { opacity: 0.45; cursor: default; }
+
+/* ── split allocation ─────────────────────────────────────────────────── */
+
+/* The route is the product, so it gets the one piece of chart-like drawing on
+   the page: a single stacked bar, flat fills, no gradients. Each segment is a
+   venue's share of the trade, in the same order as the table beneath it. */
+.alloc-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 1px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.alloc-seg { height: 100%; min-width: 2px; }
+.alloc-seg + .alloc-seg { border-left: 1px solid var(--paper); }
+
+/* Five venue colours, all drawn from the token set rather than invented, so
+   the palette stays the same instrument in both themes. */
+.vc-0 { background: var(--accent); }
+.vc-1 { background: var(--amber); }
+.vc-2 { background: var(--up); }
+.vc-3 { background: var(--ink-2); }
+.vc-4 { background: var(--down); }
+
+.swatch {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 1px;
+  margin-right: 7px;
+  vertical-align: baseline;
+  flex: none;
+}
+
+.route-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 9px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--rule);
+}
+.route-row:last-child { border-bottom: 0; }
+
+/* ── verdict ──────────────────────────────────────────────────────────── */
+
+/* The headline claim: split versus best single venue, after gas. It is the
+   only element on the page with a wash behind it, because it is the only
+   conclusion. */
+.verdict {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  font-size: 13px;
+}
+.verdict.win { background: var(--up-wash); border-color: transparent; color: var(--up); }
+.verdict.flat { color: var(--ink-2); }
+
+/* ── depth chart ──────────────────────────────────────────────────────── */
+
+.chart-frame {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.chart-frame canvas { width: 100%; height: 100%; }
+
+/* ── disclosure banner ────────────────────────────────────────────────── */
+
+/* Unaudited software that moves real money says so above the fold, not in a
+   footer. Amber, because it is a caution and not an error. */
+.disclaimer {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 22px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--amber);
+  background: var(--amber-wash);
+  border-radius: var(--radius);
+}
+.disclaimer strong { font-weight: 600; }
+
+.wallet-addr { font-family: var(--mono); font-size: 12px; }
+
+.err {
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: var(--down);
+  background: var(--down-wash);
+  border-radius: var(--radius);
+}
+
+@media (max-width: 860px) {
+  .chart-frame { height: 240px; }
+}

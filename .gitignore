@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+.DS_Store
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+bench-results.json
+*.tsbuildinfo
+next-env.d.ts
