@@ -7,7 +7,7 @@ on:
 
 jobs:
   app:
-    name: Build and typecheck
+    name: Typecheck, unit tests, build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,16 +17,24 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      # The solver maths needs no network, so it runs first and fails fast.
+      - run: npm run test:unit
       - run: npm run build
 
-  addresses:
-    name: Verify on-chain addresses
+  chain-constants:
+    name: Verify addresses and tokens
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Every hardcoded address must still have bytecode on Base. A wrong
-      # address is the cheapest bug to ship and the cheapest one to catch.
-      - run: ./scripts/verify-addresses.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # A wrong address is the cheapest bug to ship and the cheapest to catch.
+      # A wrong `decimals` is the most expensive, and just as cheap to catch.
+      - run: npm run verify:addresses
+      - run: npm run verify:tokens
 
   contracts:
     name: Fork tests
@@ -39,7 +47,7 @@ jobs:
           cache: npm
       - uses: foundry-rs/foundry-toolchain@v1
       - run: npm ci
-      # forge-std is not vendored, so fetch it here rather than committing a
+      # forge-std is not vendored, so fetch it rather than committing a
       # dependency into the repo.
       - run: forge install foundry-rs/forge-std --no-git
         working-directory: contracts

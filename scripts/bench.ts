@@ -26,6 +26,11 @@ const PAIRS: [string, string, number[]][] = [
   ['WETH', 'cbBTC', [0.1, 1, 10]],
   ['USDC', 'DAI', [1_000, 25_000]],
   ['WETH', 'DAI', [0.01, 0.1]],
+  // Long-tail: no direct pool to the quote asset, so every route is two-hop.
+  ['DEGEN', 'USDC', [10_000, 500_000]],
+  ['BRETT', 'USDC', [10_000, 200_000]],
+  ['AERO', 'USDC', [500, 25_000]],
+  ['cbETH', 'USDC', [1, 20]],
 ];
 
 type Row = {
@@ -33,6 +38,9 @@ type Row = {
   size: number;
   venues: number;
   bestVenue: string;
+  /** Hops on the winning route: 1 direct, 2 through an intermediate. */
+  bestHops: number;
+  multiHopCandidates: number;
   splitLegs: number;
   grossBps: number;
   netBps: number;
@@ -56,11 +64,14 @@ for (const [inSym, outSym, sizes] of PAIRS) {
       const curves = await quoteLadder(tokenIn, tokenOut, ladder(amountIn), undefined, blockNumber);
       if (curves.length === 0) continue;
       const best = bestRoute(curves, amountIn, hopCost);
+      const bestVenue = best.single.allocations[0]?.venue;
       rows.push({
         pair: `${inSym}/${outSym}`,
         size,
         venues: curves.length,
-        bestVenue: best.single.allocations[0]?.venue.label ?? '—',
+        bestVenue: bestVenue?.label ?? '—',
+        bestHops: bestVenue?.hops.length ?? 0,
+        multiHopCandidates: curves.filter((c) => c.venue.hops.length > 1).length,
         splitLegs: best.split.allocations.length,
         grossBps: best.edgeBps,
         netBps: best.netEdgeBps,
@@ -75,12 +86,13 @@ for (const [inSym, outSym, sizes] of PAIRS) {
 
 console.log('\n');
 
-const header = '| Pair | Size | Venues | Best single | Split legs | Gross edge | Net of gas | Router picks |';
-const divider = '| --- | ---: | ---: | --- | ---: | ---: | ---: | --- |';
+const header =
+  '| Pair | Size | Routes | Best single | Hops | Split legs | Gross edge | Net of gas | Picks |';
+const divider = '| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- |';
 const body = rows.map(
   (r) =>
     `| ${r.pair} | ${r.size.toLocaleString('en-US')} | ${r.venues} | ${r.bestVenue} | ` +
-    `${r.splitLegs} | ${r.grossBps >= 0 ? '+' : ''}${r.grossBps.toFixed(1)} bp | ` +
+    `${r.bestHops} | ${r.splitLegs} | ${r.grossBps >= 0 ? '+' : ''}${r.grossBps.toFixed(1)} bp | ` +
     `${r.netBps >= 0 ? '+' : ''}${r.netBps.toFixed(1)} bp | ${r.chosen} |`,
 );
 
@@ -91,11 +103,13 @@ const splitWins = rows.filter((r) => r.chosen === 'split');
 const median = (xs: number[]) =>
   xs.length === 0 ? 0 : [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
+const multiHopWins = rows.filter((r) => r.bestHops > 1);
 const summary = {
   blockNumber: blockNumber.toString(),
   generatedAt: new Date().toISOString(),
   casesRun: rows.length,
   splitChosen: splitWins.length,
+  multiHopBest: multiHopWins.length,
   medianNetEdgeWhenSplitBps: median(splitWins.map((r) => r.netBps)),
   maxNetEdgeBps: rows.reduce((a, r) => Math.max(a, r.netBps), 0),
   rows,
@@ -105,7 +119,7 @@ writeFileSync('bench-results.json', JSON.stringify(summary, null, 2));
 
 console.log(
   `\nsplit chosen in ${splitWins.length}/${rows.length} cases; ` +
-    `median net edge when split ${summary.medianNetEdgeWhenSplitBps.toFixed(1)} bp; ` +
-    `best ${summary.maxNetEdgeBps.toFixed(1)} bp`,
+    `multi-hop was the best route in ${multiHopWins.length}/${rows.length}; ` +
+    `median net edge when split ${summary.medianNetEdgeWhenSplitBps.toFixed(1)} bp`,
 );
 console.log('wrote bench-results.json');

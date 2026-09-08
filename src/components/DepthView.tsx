@@ -5,6 +5,7 @@ import { TOKENS, bySymbol } from '@/lib/chain';
 import { fetchQuote, type QuoteResponse } from '@/lib/api';
 import { sig, bps } from '@/lib/format';
 import { DepthChart } from './DepthChart';
+import { TokenSelect } from './TokenSelect';
 
 const SIZES = ['0.1', '1', '10', '50'];
 const SERIES_CLASS = ['vc-0', 'vc-1', 'vc-2', 'vc-3', 'vc-4'];
@@ -71,17 +72,9 @@ export function DepthView() {
         <div className="section-head">
           <h2 className="sec-label">Pair</h2>
           <div className="section-meta flex items-center gap-2">
-            <select className="token-select" value={inSym} onChange={(e) => setInSym(e.target.value)}>
-              {TOKENS.map((t) => (
-                <option key={t.symbol}>{t.symbol}</option>
-              ))}
-            </select>
+            <TokenSelect value={inSym} onChange={setInSym} tokens={TOKENS} exclude={outSym} />
             <span className="mut">→</span>
-            <select className="token-select" value={outSym} onChange={(e) => setOutSym(e.target.value)}>
-              {TOKENS.map((t) => (
-                <option key={t.symbol}>{t.symbol}</option>
-              ))}
-            </select>
+            <TokenSelect value={outSym} onChange={setOutSym} tokens={TOKENS} exclude={inSym} />
             <span className="seg" style={{ marginLeft: 10 }}>
               {SIZES.map((s) => (
                 <button

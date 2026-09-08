@@ -1,7 +1,7 @@
 {
-  "blockNumber": "51036314",
-  "generatedAt": "2026-09-08T10:06:48.332Z",
-  "count": 8,
+  "blockNumber": "51038629",
+  "generatedAt": "2026-09-08T11:24:11.522Z",
+  "count": 11,
   "cases": [
     {
       "label": "0.1 WETH -> USDC",
@@ -10,11 +10,21 @@
       "amountIn": "100000000000000000",
       "venueKind": "v3",
       "venueLabel": "Uniswap V3 0.01%",
-      "fee": 100,
-      "router": "univ3",
-      "stable": false,
-      "predictedOut": "248833078",
-      "predictedSplitOut": "248833078",
+      "hops": 1,
+      "path": [
+        "0x4200000000000000000000000000000000000006",
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      ],
+      "fees": [
+        100
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x4200000000000000000000000000000000000006000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "predictedOut": "247581184",
+      "predictedSplitOut": "247581184",
       "splitLegs": 1,
       "edgeBps": 0
     },
@@ -24,13 +34,23 @@
       "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "amountIn": "1000000000000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 0.05%",
-      "fee": 500,
-      "router": "univ3",
-      "stable": false,
-      "predictedOut": "2487537234",
-      "predictedSplitOut": "2487743200",
-      "splitLegs": 2,
+      "venueLabel": "Uniswap V3 0.01%",
+      "hops": 1,
+      "path": [
+        "0x4200000000000000000000000000000000000006",
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      ],
+      "fees": [
+        100
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x4200000000000000000000000000000000000006000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "predictedOut": "2474828509",
+      "predictedSplitOut": "2474828509",
+      "splitLegs": 1,
       "edgeBps": 0
     },
     {
@@ -40,13 +60,23 @@
       "amountIn": "10000000000000000000",
       "venueKind": "v3",
       "venueLabel": "Uniswap V3 0.05%",
-      "fee": 500,
-      "router": "univ3",
-      "stable": false,
-      "predictedOut": "24864020621",
-      "predictedSplitOut": "24865633055",
+      "hops": 1,
+      "path": [
+        "0x4200000000000000000000000000000000000006",
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      ],
+      "fees": [
+        500
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x42000000000000000000000000000000000000060001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "predictedOut": "24729223623",
+      "predictedSplitOut": "24732044204",
       "splitLegs": 2,
-      "edgeBps": 0
+      "edgeBps": 1
     },
     {
       "label": "1000 USDC -> WETH",
@@ -54,13 +84,23 @@
       "tokenOut": "0x4200000000000000000000000000000000000006",
       "amountIn": "1000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 0.01%",
-      "fee": 100,
-      "router": "univ3",
-      "stable": false,
-      "predictedOut": "401705369129648106",
-      "predictedSplitOut": "401705369129648106",
-      "splitLegs": 1,
+      "venueLabel": "Uniswap V3 0.05%",
+      "hops": 1,
+      "path": [
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "0x4200000000000000000000000000000000000006"
+      ],
+      "fees": [
+        500
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA029130001f44200000000000000000000000000000000000006",
+      "predictedOut": "403763629675895666",
+      "predictedSplitOut": "403771580074998582",
+      "splitLegs": 2,
       "edgeBps": 0
     },
     {
@@ -70,11 +110,21 @@
       "amountIn": "25000000000",
       "venueKind": "v3",
       "venueLabel": "Uniswap V3 0.05%",
-      "fee": 500,
-      "router": "univ3",
-      "stable": false,
-      "predictedOut": "10034431085741909451",
-      "predictedSplitOut": "10035297235745683014",
+      "hops": 1,
+      "path": [
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "0x4200000000000000000000000000000000000006"
+      ],
+      "fees": [
+        500
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA029130001f44200000000000000000000000000000000000006",
+      "predictedOut": "10089147965273080722",
+      "predictedSplitOut": "10089528238288563955",
       "splitLegs": 2,
       "edgeBps": 0
     },
@@ -84,14 +134,27 @@
       "tokenOut": "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
       "amountIn": "50000000000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 0.05%",
-      "fee": 500,
-      "router": "univ3",
-      "stable": false,
-      "predictedOut": "122367191950257973247",
-      "predictedSplitOut": "122936462870247762952",
-      "splitLegs": 4,
-      "edgeBps": 46
+      "venueLabel": "Uniswap V3 0.05/0.05% via USDC",
+      "hops": 2,
+      "path": [
+        "0x4200000000000000000000000000000000000006",
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb"
+      ],
+      "fees": [
+        500,
+        500
+      ],
+      "stables": [
+        false,
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x42000000000000000000000000000000000000060001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA029130001f450c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+      "predictedOut": "123746876108413820450",
+      "predictedSplitOut": "123746876108413820450",
+      "splitLegs": 1,
+      "edgeBps": 0
     },
     {
       "label": "1 WETH -> cbBTC",
@@ -100,11 +163,21 @@
       "amountIn": "1000000000000000000",
       "venueKind": "v3",
       "venueLabel": "Uniswap V3 0.05%",
-      "fee": 500,
-      "router": "univ3",
-      "stable": false,
-      "predictedOut": "3160805",
-      "predictedSplitOut": "3160805",
+      "hops": 1,
+      "path": [
+        "0x4200000000000000000000000000000000000006",
+        "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf"
+      ],
+      "fees": [
+        500
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x42000000000000000000000000000000000000060001f4cbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+      "predictedOut": "3155777",
+      "predictedSplitOut": "3155777",
       "splitLegs": 1,
       "edgeBps": 0
     },
@@ -115,12 +188,100 @@
       "amountIn": "5000000000",
       "venueKind": "v3",
       "venueLabel": "Uniswap V3 0.01%",
-      "fee": 100,
-      "router": "univ3",
-      "stable": false,
-      "predictedOut": "5001010018309999894794",
-      "predictedSplitOut": "5001042812489524794458",
+      "hops": 1,
+      "path": [
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb"
+      ],
+      "fees": [
+        100
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA0291300006450c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+      "predictedOut": "5001084603527287245519",
+      "predictedSplitOut": "5001084603527287245519",
+      "splitLegs": 1,
+      "edgeBps": 0
+    },
+    {
+      "label": "50000 DEGEN -> USDC",
+      "tokenIn": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed",
+      "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "amountIn": "49999999999999995805696",
+      "venueKind": "v3",
+      "venueLabel": "Uniswap V3 0.30/0.05% via WETH",
+      "hops": 2,
+      "path": [
+        "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed",
+        "0x4200000000000000000000000000000000000006",
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      ],
+      "fees": [
+        3000,
+        500
+      ],
+      "stables": [
+        false,
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed000bb842000000000000000000000000000000000000060001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "predictedOut": "52697956",
+      "predictedSplitOut": "52708620",
       "splitLegs": 2,
+      "edgeBps": 2
+    },
+    {
+      "label": "500 AERO -> USDC",
+      "tokenIn": "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
+      "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "amountIn": "500000000000000000000",
+      "venueKind": "v3",
+      "venueLabel": "Uniswap V3 0.05%",
+      "hops": 1,
+      "path": [
+        "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      ],
+      "fees": [
+        500
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x940181a94A35A4569E4529A3CDfB74e38FD986310001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "predictedOut": "328099645",
+      "predictedSplitOut": "328099645",
+      "splitLegs": 1,
+      "edgeBps": 0
+    },
+    {
+      "label": "10000 BRETT -> WETH",
+      "tokenIn": "0x532f27101965dd16442E59d40670FaF5eBB142E4",
+      "tokenOut": "0x4200000000000000000000000000000000000006",
+      "amountIn": "10000000000000000000000",
+      "venueKind": "v3",
+      "venueLabel": "Uniswap V3 1.00%",
+      "hops": 1,
+      "path": [
+        "0x532f27101965dd16442E59d40670FaF5eBB142E4",
+        "0x4200000000000000000000000000000000000006"
+      ],
+      "fees": [
+        10000
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x0000000000000000000000000000000000000000",
+      "v3Path": "0x532f27101965dd16442E59d40670FaF5eBB142E40027104200000000000000000000000000000000000006",
+      "predictedOut": "21680861315060514",
+      "predictedSplitOut": "21683013454636985",
+      "splitLegs": 4,
       "edgeBps": 0
     }
   ]

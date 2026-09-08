@@ -6,17 +6,18 @@
  * hold approvals, and has no contract of its own on mainnet. The consequence
  * worth stating plainly: a bug in this file costs the user a bad fill, not
  * their balance.
+ *
+ * Multi-hop routes settle atomically — Uniswap V3 through `exactInput` with a
+ * packed path, the V2 forks and Aerodrome through their multi-element path and
+ * route arguments. There is no version of this that sends two transactions and
+ * hopes; a partially executed route leaves the user holding an intermediate
+ * token they never asked for.
  */
 
 import { encodeFunctionData, parseAbi, type Address } from 'viem';
-import {
-  UNIV3_SWAP_ROUTER,
-  AERO_ROUTER,
-  AERO_FACTORY,
-  type Token,
-} from './chain';
+import { UNIV3_SWAP_ROUTER, AERO_ROUTER, AERO_FACTORY, type Token } from './chain';
 import { univ3RouterAbi, aeroRouterAbi, v2RouterAbi, erc20Abi } from './abis';
-import type { Venue } from './quote';
+import { encodeV3Path, type Venue, type Hop } from './quote';
 
 const V3R = parseAbi(univ3RouterAbi);
 const AEROR = parseAbi(aeroRouterAbi);
@@ -40,12 +41,13 @@ export function minOut(quotedOut: bigint, slippageBps: number): bigint {
 
 /** The router that will pull the input token, i.e. the address to approve. */
 export function spenderFor(venue: Venue): Address {
-  switch (venue.kind) {
+  switch (venue.family) {
     case 'v3':
       return UNIV3_SWAP_ROUTER;
     case 'aero':
       return AERO_ROUTER;
     case 'v2':
+      if (!venue.router) throw new Error(`v2 venue ${venue.id} has no router`);
       return venue.router;
   }
 }
@@ -67,39 +69,62 @@ export function approveTx(token: Token, spender: Address, amount: bigint): SwapT
 
 export function buildSwap(
   venue: Venue,
-  tokenIn: Token,
-  tokenOut: Token,
   amountIn: bigint,
   amountOutMinimum: bigint,
   recipient: Address,
   deadlineSeconds = 600,
 ): SwapTx {
   const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineSeconds);
+  const path = venue.path;
 
-  switch (venue.kind) {
-    case 'v3':
+  switch (venue.family) {
+    case 'v3': {
+      const fees = venue.hops.map((h) => (h as Extract<Hop, { family: 'v3' }>).fee);
+
+      if (venue.hops.length === 1) {
+        return {
+          to: UNIV3_SWAP_ROUTER,
+          data: encodeFunctionData({
+            abi: V3R,
+            functionName: 'exactInputSingle',
+            args: [
+              {
+                tokenIn: path[0].address,
+                tokenOut: path[1].address,
+                fee: fees[0],
+                recipient,
+                amountIn,
+                amountOutMinimum,
+                // No price limit: the minimum-output check is the guard, and a
+                // sqrtPrice bound on top of it produces confusing partial-fill
+                // reverts for no additional safety.
+                sqrtPriceLimitX96: 0n,
+              },
+            ],
+          }),
+          value: 0n,
+        };
+      }
+
       return {
         to: UNIV3_SWAP_ROUTER,
         data: encodeFunctionData({
           abi: V3R,
-          functionName: 'exactInputSingle',
+          functionName: 'exactInput',
           args: [
             {
-              tokenIn: tokenIn.address,
-              tokenOut: tokenOut.address,
-              fee: venue.fee,
+              path: encodeV3Path(path, fees),
               recipient,
               amountIn,
+              // The floor applies to the end of the path, not to each hop. An
+              // intermediate leg is allowed to come out wherever it comes out.
               amountOutMinimum,
-              // No price limit: the minimum-output check is the guard, and a
-              // sqrtPrice bound on top of it produces confusing partial-fill
-              // reverts for no additional safety.
-              sqrtPriceLimitX96: 0n,
             },
           ],
         }),
         value: 0n,
       };
+    }
 
     case 'aero':
       return {
@@ -110,14 +135,12 @@ export function buildSwap(
           args: [
             amountIn,
             amountOutMinimum,
-            [
-              {
-                from: tokenIn.address,
-                to: tokenOut.address,
-                stable: venue.stable,
-                factory: AERO_FACTORY,
-              },
-            ],
+            venue.hops.map((h, i) => ({
+              from: path[i].address,
+              to: path[i + 1].address,
+              stable: (h as Extract<Hop, { family: 'aero' }>).stable,
+              factory: AERO_FACTORY,
+            })),
             recipient,
             deadline,
           ],
@@ -127,19 +150,16 @@ export function buildSwap(
 
     case 'v2':
       return {
-        to: venue.router,
+        to: spenderFor(venue),
         data: encodeFunctionData({
           abi: V2R,
           functionName: 'swapExactTokensForTokens',
-          args: [
-            amountIn,
-            amountOutMinimum,
-            [tokenIn.address, tokenOut.address],
-            recipient,
-            deadline,
-          ],
+          args: [amountIn, amountOutMinimum, path.map((t) => t.address), recipient, deadline],
         }),
         value: 0n,
       };
   }
 }
+
+/** Human-readable route, e.g. "WETH → USDC → DAI". */
+export const routeLabel = (venue: Venue): string => venue.path.map((t) => t.symbol).join(' → ');

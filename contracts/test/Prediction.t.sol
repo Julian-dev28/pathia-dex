@@ -19,7 +19,15 @@ interface ISwapRouter02 {
         uint160 sqrtPriceLimitX96;
     }
 
+    struct ExactInputParams {
+        bytes path;
+        address recipient;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+    }
+
     function exactInputSingle(ExactInputSingleParams calldata) external payable returns (uint256);
+    function exactInput(ExactInputParams calldata) external payable returns (uint256);
 }
 
 interface IAeroRouter {
@@ -178,46 +186,90 @@ contract PredictionTest is Test {
         vm.startPrank(trader);
 
         if (_eq(kind, "v3")) {
-            IERC20(tokenIn).approve(UNIV3_ROUTER, amountIn);
-            ISwapRouter02(UNIV3_ROUTER).exactInputSingle(
-                ISwapRouter02.ExactInputSingleParams({
-                    tokenIn: tokenIn,
-                    tokenOut: tokenOut,
-                    fee: uint24(vm.parseJsonUint(json, string.concat(base, ".fee"))),
-                    recipient: trader,
-                    amountIn: amountIn,
-                    // Zero here on purpose: the point of the test is to observe
-                    // what the venue actually pays, not to assert a floor. The
-                    // floor is the app's job and is tested by its own path.
-                    amountOutMinimum: 0,
-                    sqrtPriceLimitX96: 0
-                })
-            );
+            _execV3(trader, base, tokenIn, tokenOut, amountIn);
         } else if (_eq(kind, "aero")) {
-            IERC20(tokenIn).approve(AERO_ROUTER, amountIn);
-            IAeroRouter.Route[] memory routes = new IAeroRouter.Route[](1);
-            routes[0] = IAeroRouter.Route({
-                from: tokenIn,
-                to: tokenOut,
-                stable: vm.parseJsonBool(json, string.concat(base, ".stable")),
-                factory: AERO_FACTORY
-            });
-            IAeroRouter(AERO_ROUTER).swapExactTokensForTokens(
-                amountIn, 0, routes, trader, block.timestamp + 600
-            );
+            _execAero(trader, base, tokenIn, amountIn);
         } else {
-            address router = vm.parseJsonAddress(json, string.concat(base, ".router"));
-            IERC20(tokenIn).approve(router, amountIn);
-            address[] memory path = new address[](2);
-            path[0] = tokenIn;
-            path[1] = tokenOut;
-            IV2Router(router).swapExactTokensForTokens(
-                amountIn, 0, path, trader, block.timestamp + 600
-            );
+            _execV2(trader, base, tokenIn, amountIn);
         }
 
         vm.stopPrank();
         realised = IERC20(tokenOut).balanceOf(trader) - before;
+    }
+
+    // Each family gets its own function purely to keep the stack under sixteen
+    // slots. Inlined into one branch, the compiler gives up.
+
+    function _execV3(
+        address trader,
+        string memory base,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    ) internal {
+        IERC20(tokenIn).approve(UNIV3_ROUTER, amountIn);
+
+        if (vm.parseJsonUint(json, string.concat(base, ".hops")) == 1) {
+            uint256[] memory fees = vm.parseJsonUintArray(json, string.concat(base, ".fees"));
+            ISwapRouter02(UNIV3_ROUTER).exactInputSingle(
+                ISwapRouter02.ExactInputSingleParams({
+                    tokenIn: tokenIn,
+                    tokenOut: tokenOut,
+                    fee: uint24(fees[0]),
+                    recipient: trader,
+                    amountIn: amountIn,
+                    // Zero on purpose: the test observes what the venue
+                    // actually pays. The floor is the app's job.
+                    amountOutMinimum: 0,
+                    sqrtPriceLimitX96: 0
+                })
+            );
+        } else {
+            // The packed path comes from the TypeScript that made the
+            // prediction, so this asserts the encoder too: a path this contract
+            // cannot spend is a path the app would have signed.
+            ISwapRouter02(UNIV3_ROUTER).exactInput(
+                ISwapRouter02.ExactInputParams({
+                    path: vm.parseJsonBytes(json, string.concat(base, ".v3Path")),
+                    recipient: trader,
+                    amountIn: amountIn,
+                    amountOutMinimum: 0
+                })
+            );
+        }
+    }
+
+    function _execAero(address trader, string memory base, address tokenIn, uint256 amountIn)
+        internal
+    {
+        IERC20(tokenIn).approve(AERO_ROUTER, amountIn);
+        address[] memory path = vm.parseJsonAddressArray(json, string.concat(base, ".path"));
+        bool[] memory stables = vm.parseJsonBoolArray(json, string.concat(base, ".stables"));
+
+        IAeroRouter.Route[] memory routes = new IAeroRouter.Route[](path.length - 1);
+        for (uint256 h = 0; h < routes.length; h++) {
+            routes[h] = IAeroRouter.Route({
+                from: path[h],
+                to: path[h + 1],
+                stable: stables[h],
+                factory: AERO_FACTORY
+            });
+        }
+
+        IAeroRouter(AERO_ROUTER).swapExactTokensForTokens(
+            amountIn, 0, routes, trader, block.timestamp + 600
+        );
+    }
+
+    function _execV2(address trader, string memory base, address tokenIn, uint256 amountIn)
+        internal
+    {
+        address router = vm.parseJsonAddress(json, string.concat(base, ".router"));
+        IERC20(tokenIn).approve(router, amountIn);
+        address[] memory path = vm.parseJsonAddressArray(json, string.concat(base, ".path"));
+        IV2Router(router).swapExactTokensForTokens(
+            amountIn, 0, path, trader, block.timestamp + 600
+        );
     }
 
     function _eq(string memory a, string memory b) internal pure returns (bool) {

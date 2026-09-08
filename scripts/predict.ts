@@ -14,7 +14,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { bySymbol } from '../src/lib/chain';
-import { client, quoteLadder, ladder, bestRoute, interpolate } from '../src/lib/quote';
+import { client, quoteLadder, ladder, bestRoute, interpolate, encodeV3Path } from '../src/lib/quote';
 
 const OUT = 'contracts/test/fixtures/predictions.json';
 
@@ -30,6 +30,12 @@ const CASES: [string, string, string][] = [
   ['WETH', 'DAI', '0.05'],
   ['WETH', 'cbBTC', '1'],
   ['USDC', 'DAI', '5000'],
+  // Long-tail tokens with no direct pool to USDC: these only quote at all
+  // because of multi-hop, so they are the cases that would silently regress if
+  // intermediate routing broke.
+  ['DEGEN', 'USDC', '50000'],
+  ['AERO', 'USDC', '500'],
+  ['BRETT', 'WETH', '10000'],
 ];
 
 // Five blocks back: far enough that the node has settled on it, near enough
@@ -55,19 +61,22 @@ for (const [inSym, outSym, amount] of CASES) {
     const venue = best.single.allocations[0]?.venue;
     if (!venue) continue;
 
+    // Everything the Solidity side needs to rebuild the same call. The shape is
+    // uniform across families — unused fields are zeroed rather than omitted —
+    // so vm.parseJson does not need a branch per venue kind.
     cases.push({
       label: `${amount} ${inSym} -> ${outSym}`,
       tokenIn: tokenIn.address,
       tokenOut: tokenOut.address,
       amountIn: amountIn.toString(),
-      venueKind: venue.kind,
+      venueKind: venue.family,
       venueLabel: venue.label,
-      // Everything the Solidity side needs to rebuild the same call. Unused
-      // fields are zeroed rather than omitted so the JSON shape is uniform and
-      // vm.parseJson does not need a branch per venue kind.
-      fee: venue.kind === 'v3' ? venue.fee : 0,
-      router: venue.kind === 'v2' ? venue.router : venue.kind === 'aero' ? 'aero' : 'univ3',
-      stable: venue.kind === 'aero' ? venue.stable : false,
+      hops: venue.hops.length,
+      path: venue.path.map((t) => t.address),
+      fees: venue.hops.map((h) => (h.family === 'v3' ? h.fee : 0)),
+      stables: venue.hops.map((h) => (h.family === 'aero' ? h.stable : false)),
+      router: venue.router ?? '0x0000000000000000000000000000000000000000',
+      v3Path: venue.family === 'v3' ? encodeV3Path(venue.path, venue.hops.map((h) => (h.family === 'v3' ? h.fee : 0))) : '0x',
       predictedOut: best.single.amountOut.toString(),
       predictedSplitOut: best.split.amountOut.toString(),
       splitLegs: best.split.allocations.length,

@@ -21,6 +21,7 @@ export type ApiVenue = {
   venue: Venue;
   gasEstimate: bigint;
   amountOutAtFull: bigint;
+  multiHop: boolean;
   rungs: Rung[];
 };
 
@@ -28,6 +29,10 @@ export type QuoteResponse = {
   tokenIn: Token;
   tokenOut: Token;
   amountIn: bigint;
+  blockNumber: bigint;
+  quotedAt: number;
+  expiresAt: number;
+  cached: boolean;
   latencyMs: number;
   gas: {
     gasPriceWei: bigint;
@@ -54,6 +59,7 @@ const BIGINT_KEYS = new Set([
   'gasPriceWei',
   'gasPerExtraHop',
   'hopCostInOutputToken',
+  'blockNumber',
 ]);
 
 function revive(v: unknown, key?: string): unknown {

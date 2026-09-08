@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain, useBlockNumber } from 'wagmi';
 import { base } from 'wagmi/chains';
 import { addr } from '@/lib/format';
+import { ThemeToggle } from './ThemeToggle';
 
 const NAV = [
   { href: '/', label: 'Terminal' },
@@ -35,7 +36,7 @@ export function Masthead() {
     <header className="masthead">
       <div className="masthead-inner">
         <Link href="/" className="brand">
-          base·router
+          pathia dex
         </Link>
 
         <nav className="tabs-main">
@@ -54,6 +55,8 @@ export function Masthead() {
           <span className={`pill${blockNumber ? '' : ' offline'}`}>
             {blockNumber ? `Base ${blockNumber.toString()}` : 'connecting'}
           </span>
+
+          <ThemeToggle />
 
           {wrongChain ? (
             <button className="btn" onClick={() => switchChain({ chainId: base.id })}>

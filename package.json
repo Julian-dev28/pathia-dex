@@ -1,5 +1,5 @@
 {
-  "name": "base-router",
+  "name": "pathia-dex",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,22 +12,27 @@
     "predict": "tsx scripts/predict.ts",
     "smoke": "tsx scripts/smoke.ts",
     "test": "npm run typecheck && npm run build && npm run predict && cd contracts && forge test",
-    "verify:addresses": "./scripts/verify-addresses.sh"
+    "verify:addresses": "./scripts/verify-addresses.sh",
+    "verify:tokens": "tsx scripts/verify-tokens.ts",
+    "test:unit": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.0",
+    "@wagmi/core": "^2.22.0",
     "next": "^15.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "viem": "^2.37.0",
-    "wagmi": "^2.17.0",
-    "@wagmi/core": "^2.22.0"
+    "wagmi": "^2.17.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "tsx": "^4.23.13",
-    "typescript": "^5.9.0"
-  }
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.0"
+  },
+  "description": "On-chain route solver for Base. Quotes every venue from pool state, solves the optimal split, executes through audited routers."
 }

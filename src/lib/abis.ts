@@ -42,14 +42,23 @@ export const aeroPoolAbi = [
 // batches through Multicall3 like any view function.
 export const quoterV2Abi = [
   'function quoteExactInputSingle((address tokenIn, address tokenOut, uint256 amountIn, uint24 fee, uint160 sqrtPriceLimitX96) params) returns (uint256 amountOut, uint160 sqrtPriceX96After, uint32 initializedTicksCrossed, uint256 gasEstimate)',
+  // Multi-hop. The path is packed token,fee,token,fee,token — see encodeV3Path.
+  'function quoteExactInput(bytes path, uint256 amountIn) returns (uint256 amountOut, uint160[] sqrtPriceX96AfterList, uint32[] initializedTicksCrossedList, uint256 gasEstimate)',
 ] as const;
 
 export const univ3RouterAbi = [
   'function exactInputSingle((address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) params) payable returns (uint256 amountOut)',
+  // Multi-hop, atomic: one transaction, one minimum-output check on the end of
+  // the path. SwapRouter02 carries no deadline field; it wraps calls in
+  // multicall(deadline, ...) when one is wanted.
+  'function exactInput((bytes path, address recipient, uint256 amountIn, uint256 amountOutMinimum) params) payable returns (uint256 amountOut)',
 ] as const;
 
 export const aeroRouterAbi = [
   'function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, (address from, address to, bool stable, address factory)[] routes, address to, uint256 deadline) returns (uint256[] amounts)',
+  // Quoting Aerodrome through its own router rather than reimplementing the
+  // Solidly invariant: it handles stable and volatile curves and chains hops.
+  'function getAmountsOut(uint256 amountIn, (address from, address to, bool stable, address factory)[] routes) view returns (uint256[] amounts)',
 ] as const;
 
 export const v2RouterAbi = [

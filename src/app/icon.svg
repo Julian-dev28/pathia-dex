@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="5" fill="#0a1211"/>
+  <!-- One trade splitting into three venues: the product, at 32 pixels. -->
+  <path d="M6 16h6l7-7h7M12 16l7 7h7M12 16h14"
+        fill="none" stroke="#4fd1b8" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,4 +1,4 @@
-export const metadata = { title: 'Method — base·router' };
+export const metadata = { title: 'Method — Pathia DEX' };
 
 /**
  * The docs page is where the project either earns trust or loses it. It states
@@ -26,13 +26,22 @@ export default function Page() {
             <p>
               Nothing is hardcoded except factory addresses. For a given pair the router asks
               Uniswap V2, SushiSwap and BaseSwap for their pair, Aerodrome for both its stable
-              and volatile pool, and lists all four Uniswap V3 fee tiers. Tiers with no pool
-              revert at quote time and drop out on their own.
+              and volatile pool, and lists the Uniswap V3 fee tiers — then repeats all of that
+              through each intermediate token, so a two-hop route is a candidate on the same
+              footing as a direct one. Tiers with no pool revert at quote time and drop out.
+            </p>
+            <p className="mt-2">
+              The candidate set is deliberately wide and pruned by price rather than by
+              guesswork: every candidate is quoted once at full size, and only the best six
+              receive the full ladder. Laddering all of them would be roughly a hundred and
+              eighty contract calls.
             </p>
             <p className="mt-2">
               Every address in <code className="mono">src/lib/chain.ts</code> is checked for
-              bytecode by <code className="mono">scripts/verify-addresses.sh</code>, which runs in
-              CI. A wrong address is the cheapest possible bug and the cheapest possible test.
+              bytecode, and every token&rsquo;s <code className="mono">symbol()</code> and{' '}
+              <code className="mono">decimals()</code> is read from the chain. Both run in CI. A
+              token entry with the right address and the wrong decimals misprices every trade in
+              it by a factor of a thousand, silently.
             </p>
           </div>
         </section>
@@ -79,6 +88,13 @@ export default function Page() {
             deeper than it is.
           </p>
           <p className="mt-2">
+            Direct and two-hop routes compete as equals in this allocation. A two-hop route pays
+            its fee twice, so it only wins where the direct pool is thin enough for price impact
+            to dominate the extra fee — which on Base is most long-tail tokens, whose entire
+            liquidity is paired against WETH. Measured across twenty-four benchmark cases,
+            multi-hop was the best route in eight.
+          </p>
+          <p className="mt-2">
             Splitting is then charged for what it costs. Each additional venue is another pool
             touched, so the split only wins if it beats the best single venue by more than the
             extra gas — converted into the output token using the same pools the router already
@@ -104,10 +120,11 @@ export default function Page() {
             </thead>
             <tbody>
               <tr>
-                <td>Single-hop only</td>
+                <td>Two hops maximum</td>
                 <td>
-                  Routes go A→B directly. A pair whose real liquidity is A→WETH→B will be
-                  underquoted here, and an aggregator with multi-hop will beat it on those pairs.
+                  Routes go A→B or A→X→B where X is WETH or USDC. Three-hop routes exist and are
+                  not searched, and a token paired only against something other than WETH or USDC
+                  is invisible to the solver.
                 </td>
               </tr>
               <tr>
@@ -118,6 +135,14 @@ export default function Page() {
                   <code className="mono">contracts/</code> but is not deployed, because shipping
                   an unaudited contract that touches user funds to capture a basis point is a bad
                   trade.
+                </td>
+              </tr>
+              <tr>
+                <td>Quote staleness</td>
+                <td>
+                  A quote is refused for signing after 30 seconds and re-fetched. That is a
+                  backstop against a tab left open, not a freshness guarantee — Base blocks are
+                  two seconds, so a 30-second quote is already many blocks stale.
                 </td>
               </tr>
               <tr>

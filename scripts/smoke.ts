@@ -25,8 +25,8 @@ for (const c of curves) {
   const out = interpolate(c, amountIn);
   const price = Number(out) / 10 ** tokenOut.decimals / Number(amt);
   console.log(
-    `  ${c.venue.label.padEnd(22)} ${sig(out, tokenOut).padStart(16)} ${outSym}` +
-      `   px ${price.toFixed(4)}   gas ${c.gasEstimate}`,
+    `  ${c.venue.label.padEnd(26)} ${sig(out, tokenOut).padStart(16)} ${outSym}` +
+      `   px ${price.toFixed(6)}   ${c.venue.path.map((t) => t.symbol).join('>')}`,
   );
 }
 

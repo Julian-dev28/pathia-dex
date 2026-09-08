@@ -198,3 +198,179 @@
 @media (max-width: 860px) {
   .chart-frame { height: 240px; }
 }
+
+/* ── token select ─────────────────────────────────────────────────────── */
+
+.tsel { position: relative; display: inline-block; }
+
+.tsel-trigger {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 10px;
+  font-size: 13px; font-weight: 500;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tsel-trigger:hover { border-color: var(--ink-3); }
+.tsel-caret {
+  width: 5px; height: 5px; flex: none;
+  border-right: 1.5px solid var(--ink-3);
+  border-bottom: 1.5px solid var(--ink-3);
+  transform: translateY(-2px) rotate(45deg);
+}
+
+/* The popover is a document panel, not a floating card: hairline border, no
+   shadow, no blur. It sits above the trade form, which is the only thing on
+   the page that can be underneath it. */
+.tsel-pop {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 50;
+  width: 260px;
+  background: var(--surface);
+  border: 1px solid var(--rule-2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.tsel-search {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  outline: none;
+}
+.tsel-search::placeholder { color: var(--ink-3); }
+
+.tsel-list { max-height: 264px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+.tsel-empty { padding: 14px 12px; font-size: 12.5px; color: var(--ink-3); }
+
+.tsel-opt {
+  display: flex; align-items: baseline; gap: 10px; width: 100%;
+  padding: 8px 12px;
+  font-size: 13px; text-align: left;
+  color: var(--ink);
+  background: transparent; border: 0; cursor: pointer;
+}
+.tsel-opt.on { background: var(--surface-2); }
+.tsel-opt.sel .tsel-sym { color: var(--accent-ink); }
+.tsel-opt:disabled { opacity: .4; cursor: default; }
+.tsel-sym { font-weight: 500; min-width: 62px; }
+.tsel-name {
+  font-size: 12px; color: var(--ink-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── route path ───────────────────────────────────────────────────────── */
+
+/* A two-hop route is the product's most important new fact, so it is spelled
+   out as tokens with arrows rather than compressed into the venue name. */
+.route-path {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 11.5px; color: var(--ink-3);
+}
+.route-path .hop { color: var(--ink-2); }
+.route-path .arr { color: var(--ink-3); }
+
+.badge.b-hop { color: var(--amber); background: var(--amber-wash); border-color: transparent; }
+
+/* ── balance row, fine print, transaction state ───────────────────────── */
+
+.balance-row {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 0 2px;
+  font-size: 12px;
+}
+.balance-row .mut { color: var(--ink-3); }
+
+/* A text button, not a chip: "Max" is a shortcut, not a mode. */
+.link-btn {
+  margin-left: auto;
+  padding: 0;
+  font-size: 12px; font-weight: 500;
+  color: var(--accent);
+  background: transparent; border: 0; cursor: pointer;
+}
+.link-btn:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+.route-summary {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  font-size: 12.5px;
+}
+.route-summary .mut { color: var(--ink-3); }
+
+.fineprint { display: grid; gap: 4px; font-size: 12.5px; color: var(--ink-3); }
+
+.tx-row {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+}
+.tx-row.ok { color: var(--up); background: var(--up-wash); border-color: transparent; }
+
+/* ── impact warning ───────────────────────────────────────────────────── */
+
+/* A checkbox, not a second confirm dialog. The user has to touch the thing
+   that states the number, which is harder to click past than an OK button. */
+.impact-warn {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 11px 13px;
+  font-size: 12.5px; line-height: 1.5;
+  color: var(--amber);
+  background: var(--amber-wash);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.impact-warn.severe { color: var(--down); background: var(--down-wash); }
+.impact-warn input { margin-top: 2px; flex: none; accent-color: currentColor; }
+.impact-warn strong { font-weight: 600; }
+
+/* ── footer ───────────────────────────────────────────────────────────── */
+
+.site-foot {
+  margin-top: 60px;
+  padding: 22px 0 40px;
+  border-top: 1px solid var(--rule);
+}
+.site-foot-inner {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap;
+  font-size: 12px; line-height: 1.55;
+  color: var(--ink-3);
+}
+.site-foot-inner span { max-width: 78ch; }
+.site-foot-inner a { margin-left: auto; white-space: nowrap; }
+
+/* ── narrow screens ───────────────────────────────────────────────────── */
+
+/* The masthead is the only thing that genuinely breaks under 700px: four nav
+   links, a block pill, a theme button and an address do not fit. The pill is
+   the first thing to go — it is provenance, and provenance can wait for a
+   wider screen. */
+@media (max-width: 720px) {
+  .masthead-inner { gap: 16px; min-height: 52px; }
+  nav.tabs-main { gap: 16px; overflow-x: auto; }
+  .nav-link { font-size: 13px; }
+  .masthead-right .pill { display: none; }
+  .brand { font-size: 13px; letter-spacing: .14em; }
+  .shell { padding: 0 18px 60px; }
+  .site-foot-inner { padding: 0 18px; }
+  .site-foot-inner a { margin-left: 0; }
+  .amount-input { font-size: 22px; }
+  .tsel-pop { width: 220px; }
+  .verdict { font-size: 12.5px; }
+}
+
+/* Below 420px the allocation table's two columns stop fitting side by side. */
+@media (max-width: 420px) {
+  .route-row { grid-template-columns: 1fr; gap: 4px; }
+  .seg { flex-wrap: wrap; }
+}
