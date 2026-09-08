@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "bench": "tsx scripts/bench.ts",
     "predict": "tsx scripts/predict.ts",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "test": "npm run typecheck && npm run build && npm run predict && cd contracts && forge test",
+    "verify:addresses": "./scripts/verify-addresses.sh"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.0",
