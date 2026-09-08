@@ -27,7 +27,12 @@ grep -oE "^export const [A-Z0-9_]+ = '0x[a-fA-F0-9]{40}'" src/lib/chain.ts |
 grep -oE "address: '0x[a-fA-F0-9]{40}', decimals" src/lib/chain.ts |
   grep -oE "0x[a-fA-F0-9]{40}" | while read -r addr; do check "token" "$addr"; done
 
-grep -oE "factory: '0x[a-fA-F0-9]{40}'" src/lib/chain.ts |
-  grep -oE "0x[a-fA-F0-9]{40}" | while read -r addr; do check "factory" "$addr"; done
+# Struct fields: V2 forks carry factory+router, V3 deployments carry
+# quoter+router+factory. Every one of them is dialled at quote or swap time, so
+# every one of them is checked.
+for field in factory router quoter; do
+  grep -oE "$field: '0x[a-fA-F0-9]{40}'" src/lib/chain.ts |
+    grep -oE "0x[a-fA-F0-9]{40}" | sort -u | while read -r addr; do check "$field" "$addr"; done
+done
 
 exit $fail

@@ -40,9 +40,7 @@ import { base } from 'viem/chains';
 import {
   RPC_URLS,
   MULTICALL3,
-  UNIV3_QUOTER,
-  UNIV3_FEE_TIERS,
-  UNIV3_MULTIHOP_FEE_TIERS,
+  V3_DEPLOYMENTS,
   V2_VENUES,
   AERO_FACTORY,
   AERO_ROUTER,
@@ -71,7 +69,9 @@ const ZERO = '0x0000000000000000000000000000000000000000';
 const LADDER_WIDTH = 6;
 
 export type Hop =
-  | { family: 'v3'; fee: number }
+  /** `dex` indexes V3_DEPLOYMENTS: Uniswap V3 and its forks share a quoter ABI
+   *  but not a router ABI, so the deployment travels with the hop. */
+  | { family: 'v3'; fee: number; dex: number }
   | { family: 'v2'; pool: Address; feeBps: number }
   | { family: 'aero'; pool: Address; stable: boolean };
 
@@ -325,35 +325,42 @@ export async function discover(
     }
   }
 
-  // ── Uniswap V3 ────────────────────────────────────────────────────────
-  for (const fee of UNIV3_FEE_TIERS) {
-    venues.push({
-      id: `v3:${fee}`,
-      label: `Uniswap V3 ${(fee / 10_000).toFixed(2)}%`,
-      family: 'v3',
-      path: [tokenIn, tokenOut],
-      hops: [{ family: 'v3', fee }],
-    });
-  }
-  // Multi-hop V3 is restricted to the two tiers that hold real liquidity on
-  // Base. All four squared would be sixteen candidates per intermediate, most
-  // of them empty pools, and pruning them costs a contract call each.
-  for (const m of mids) {
-    for (const f1 of UNIV3_MULTIHOP_FEE_TIERS) {
-      for (const f2 of UNIV3_MULTIHOP_FEE_TIERS) {
-        venues.push({
-          id: `v3:${f1}-${f2}:${m.symbol}`,
-          label: `Uniswap V3 ${(f1 / 10_000).toFixed(2)}/${(f2 / 10_000).toFixed(2)}% via ${m.symbol}`,
-          family: 'v3',
-          path: [tokenIn, m, tokenOut],
-          hops: [
-            { family: 'v3', fee: f1 },
-            { family: 'v3', fee: f2 },
-          ],
-        });
+  // ── Concentrated liquidity (Uniswap V3 and forks) ─────────────────────
+  //
+  // No discovery calls: these quoters take a fee tier directly and revert when
+  // the pool is absent, so dead tiers prune themselves at quote time.
+  V3_DEPLOYMENTS.forEach((dep, dex) => {
+    for (const fee of dep.feeTiers) {
+      venues.push({
+        id: `v3:${dex}:${fee}`,
+        label: `${dep.name} ${(fee / 10_000).toFixed(2)}%`,
+        family: 'v3',
+        path: [tokenIn, tokenOut],
+        hops: [{ family: 'v3', fee, dex }],
+        router: dep.router,
+      });
+    }
+    // Multi-hop is restricted to the tiers that hold real liquidity on Base.
+    // All tiers squared would be sixteen candidates per intermediate per
+    // deployment, most of them empty pools, and pruning each costs a call.
+    for (const m of mids) {
+      for (const f1 of dep.multiHopTiers) {
+        for (const f2 of dep.multiHopTiers) {
+          venues.push({
+            id: `v3:${dex}:${f1}-${f2}:${m.symbol}`,
+            label: `${dep.name} ${(f1 / 10_000).toFixed(2)}/${(f2 / 10_000).toFixed(2)}% via ${m.symbol}`,
+            family: 'v3',
+            path: [tokenIn, m, tokenOut],
+            hops: [
+              { family: 'v3', fee: f1, dex },
+              { family: 'v3', fee: f2, dex },
+            ],
+            router: dep.router,
+          });
+        }
       }
     }
-  }
+  });
 
   return venues;
 }
@@ -415,10 +422,12 @@ export function ladder(amountIn: bigint, rungs = 12): bigint[] {
 /** Build the contract call that quotes one venue at one size. */
 function quoteCall(v: Venue, size: bigint): Call | null {
   if (v.family === 'v3') {
-    const fees = v.hops.map((h) => (h as Extract<Hop, { family: 'v3' }>).fee);
+    const v3hops = v.hops as Extract<Hop, { family: 'v3' }>[];
+    const fees = v3hops.map((h) => h.fee);
+    const quoter = V3_DEPLOYMENTS[v3hops[0].dex].quoter;
     if (v.hops.length === 1) {
       return {
-        target: UNIV3_QUOTER,
+        target: quoter,
         allowFailure: true,
         callData: encodeFunctionData({
           abi: QUOTER,
@@ -436,7 +445,7 @@ function quoteCall(v: Venue, size: bigint): Call | null {
       };
     }
     return {
-      target: UNIV3_QUOTER,
+      target: quoter,
       allowFailure: true,
       callData: encodeFunctionData({
         abi: QUOTER,

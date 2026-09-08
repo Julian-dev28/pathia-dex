@@ -8,6 +8,34 @@ interface IERC20 {
     function balanceOf(address) external view returns (uint256);
 }
 
+/// PancakeSwap forked Uniswap's original SwapRouter, whose swap params carry a
+/// deadline. Same function names, different structs, different selectors —
+/// verified by reading the selectors out of the deployed bytecode in
+/// scripts/probe-venues.ts. Encoding the wrong one reverts every swap.
+interface ISwapRouterWithDeadline {
+    struct ExactInputSingleParams {
+        address tokenIn;
+        address tokenOut;
+        uint24 fee;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        uint160 sqrtPriceLimitX96;
+    }
+
+    struct ExactInputParams {
+        bytes path;
+        address recipient;
+        uint256 deadline;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+    }
+
+    function exactInputSingle(ExactInputSingleParams calldata) external payable returns (uint256);
+    function exactInput(ExactInputParams calldata) external payable returns (uint256);
+}
+
 interface ISwapRouter02 {
     struct ExactInputSingleParams {
         address tokenIn;
@@ -74,7 +102,6 @@ interface IV2Router {
  * `npm run predict` before running.
  */
 contract PredictionTest is Test {
-    address constant UNIV3_ROUTER = 0x2626664c2603336E57B271c5C0b26F421741e481;
     address constant AERO_ROUTER = 0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43;
     address constant AERO_FACTORY = 0x420DD381b31aEf6683db6B902084cB0FFECe40Da;
 
@@ -207,11 +234,44 @@ contract PredictionTest is Test {
         address tokenOut,
         uint256 amountIn
     ) internal {
-        IERC20(tokenIn).approve(UNIV3_ROUTER, amountIn);
+        address router = vm.parseJsonAddress(json, string.concat(base, ".router"));
+        IERC20(tokenIn).approve(router, amountIn);
 
-        if (vm.parseJsonUint(json, string.concat(base, ".hops")) == 1) {
+        bool single = vm.parseJsonUint(json, string.concat(base, ".hops")) == 1;
+        bool hasDeadline = vm.parseJsonBool(json, string.concat(base, ".v3HasDeadline"));
+
+        if (hasDeadline) {
+            if (single) {
+                uint256[] memory fees = vm.parseJsonUintArray(json, string.concat(base, ".fees"));
+                ISwapRouterWithDeadline(router).exactInputSingle(
+                    ISwapRouterWithDeadline.ExactInputSingleParams({
+                        tokenIn: tokenIn,
+                        tokenOut: tokenOut,
+                        fee: uint24(fees[0]),
+                        recipient: trader,
+                        deadline: block.timestamp + 600,
+                        amountIn: amountIn,
+                        amountOutMinimum: 0,
+                        sqrtPriceLimitX96: 0
+                    })
+                );
+            } else {
+                ISwapRouterWithDeadline(router).exactInput(
+                    ISwapRouterWithDeadline.ExactInputParams({
+                        path: vm.parseJsonBytes(json, string.concat(base, ".v3Path")),
+                        recipient: trader,
+                        deadline: block.timestamp + 600,
+                        amountIn: amountIn,
+                        amountOutMinimum: 0
+                    })
+                );
+            }
+            return;
+        }
+
+        if (single) {
             uint256[] memory fees = vm.parseJsonUintArray(json, string.concat(base, ".fees"));
-            ISwapRouter02(UNIV3_ROUTER).exactInputSingle(
+            ISwapRouter02(router).exactInputSingle(
                 ISwapRouter02.ExactInputSingleParams({
                     tokenIn: tokenIn,
                     tokenOut: tokenOut,
@@ -228,7 +288,7 @@ contract PredictionTest is Test {
             // The packed path comes from the TypeScript that made the
             // prediction, so this asserts the encoder too: a path this contract
             // cannot spend is a path the app would have signed.
-            ISwapRouter02(UNIV3_ROUTER).exactInput(
+            ISwapRouter02(router).exactInput(
                 ISwapRouter02.ExactInputParams({
                     path: vm.parseJsonBytes(json, string.concat(base, ".v3Path")),
                     recipient: trader,

@@ -54,6 +54,14 @@ export const univ3RouterAbi = [
   'function exactInput((bytes path, address recipient, uint256 amountIn, uint256 amountOutMinimum) params) payable returns (uint256 amountOut)',
 ] as const;
 
+// PancakeSwap V3 forked Uniswap's original SwapRouter, whose swap params carry
+// a deadline. Uniswap's SwapRouter02 dropped it. Same function names, different
+// structs, different selectors — encoding one against the other reverts.
+export const v3RouterWithDeadlineAbi = [
+  'function exactInputSingle((address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) params) payable returns (uint256 amountOut)',
+  'function exactInput((bytes path, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum) params) payable returns (uint256 amountOut)',
+] as const;
+
 export const aeroRouterAbi = [
   'function swapExactTokensForTokens(uint256 amountIn, uint256 amountOutMin, (address from, address to, bool stable, address factory)[] routes, address to, uint256 deadline) returns (uint256[] amounts)',
   // Quoting Aerodrome through its own router rather than reimplementing the

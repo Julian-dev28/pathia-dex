@@ -25,21 +25,28 @@ down what it expects each to pay. `forge test` forks that exact block, performs
 the trades against the deployed Uniswap, Aerodrome and V2-fork routers, and
 compares the realised fill to the prediction.
 
-Latest run, Base block 51,038,609 — **every case exact to the wei**:
+Latest run — 13 cases, **every one exact to the wei**:
 
 | Trade | Route | Drift |
 | --- | --- | ---: |
-| 0.1 WETH → USDC | Uniswap V3 0.01% | 0 bp |
-| 1 WETH → USDC | Uniswap V3 0.01% | 0 bp |
+| 0.1 WETH → USDC | PancakeSwap V3 0.01% | 0 bp |
+| 1 WETH → USDC | Uniswap V3 0.05% | 0 bp |
 | 10 WETH → USDC | Uniswap V3 0.05% | 0 bp |
-| 1,000 USDC → WETH | Uniswap V3 0.01% | 0 bp |
-| 25,000 USDC → WETH | Uniswap V3 0.05% | 0 bp |
+| 1,000 USDC → WETH | PancakeSwap V3 0.01% | 0 bp |
+| 25,000 USDC → WETH | PancakeSwap V3 0.01% | 0 bp |
 | 0.05 WETH → DAI | **Uniswap V3 via USDC** (2 hops) | 0 bp |
-| 1 WETH → cbBTC | Uniswap V3 0.05% | 0 bp |
+| 1 WETH → cbBTC | Uniswap V3 0.30% | 0 bp |
 | 5,000 USDC → DAI | Uniswap V3 0.01% | 0 bp |
 | 50,000 DEGEN → USDC | **Uniswap V3 via WETH** (2 hops) | 0 bp |
 | 500 AERO → USDC | Uniswap V3 0.05% | 0 bp |
-| 10,000 BRETT → WETH | Uniswap V3 1.00% | 0 bp |
+| 10,000 BRETT → WETH | Uniswap V3 0.30% | 0 bp |
+| 2 WETH → USDC | PancakeSwap V3 0.01% *(forced)* | 0 bp |
+| 0.5 cbBTC → USDC | PancakeSwap V3 0.01% *(forced)* | 0 bp |
+
+Two cases are *forced* onto PancakeSwap rather than taking the best route.
+Without that, fork coverage is whatever happened to win on the day, and
+PancakeSwap's execution path is precisely the one that would silently revert —
+see below.
 
 Tolerance in the suite is 1bp; measured drift is zero. The multi-hop cases also
 validate the path encoder — a packed V3 path this test cannot spend is a path
@@ -50,8 +57,7 @@ pins a block, so regenerate before running: public Base endpoints serve recent
 state, not deep history, and a stale fixture skips with a message rather than
 failing.
 
-Getting to zero took finding two bugs that both looked like bad arithmetic and
-were not:
+Getting to zero took finding three bugs that all looked like something else:
 
 - **The test contaminated itself.** Cases shared one fork, so an earlier case
   selling 10 WETH into the 0.05% pool left it cheaper for a later case buying
@@ -60,6 +66,13 @@ were not:
 - **There are no empty addresses on a mainnet fork.** `0xA11CE` already holds 23
   USDC on Base, so asserting on an absolute balance failed by exactly that
   amount. Assertions are on deltas.
+- **PancakeSwap's router is not Uniswap's router.** It forked Uniswap's
+  *original* `SwapRouter`, whose swap params carry a `deadline`; Uniswap moved
+  to `SwapRouter02`, which does not. Same function names, different structs,
+  different selectors — and encoding one against the other reverts every swap
+  on that venue. Caught by reading the selectors out of the deployed bytecode
+  (`npm run probe:venues`) before writing a line of integration, and now
+  recorded as `routerHasDeadline` in the deployment table.
 
 ## Multi-hop, and when it matters
 
@@ -79,18 +92,20 @@ From `npm run bench`, 24 cases across nine pairs:
 
 | Pair | Size | Routes | Best single | Hops | Split legs | Gross | Net of gas | Picks |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- |
-| WETH/USDC | 1 | 9 | Uniswap V3 0.01% | 1 | 2 | +0.0 bp | +0.0 bp | single |
-| WETH/USDC | 25 | 9 | Uniswap V3 0.05% | 1 | 3 | +3.0 bp | +3.0 bp | split |
-| USDC/WETH | 100,000 | 9 | Uniswap V3 0.05% | 1 | 2 | +1.0 bp | +1.0 bp | split |
-| WETH/DAI | 0.1 | 12 | **Uniswap V3 via USDC** | 2 | 3 | +0.0 bp | +0.0 bp | single |
-| USDC/DAI | 25,000 | 12 | Uniswap V3 0.01% | 1 | 7 | +1256.0 bp | +1256.0 bp | split |
-| DEGEN/USDC | 10,000 | 11 | **Uniswap V3 via WETH** | 2 | 5 | +11.0 bp | +7.0 bp | split |
-| BRETT/USDC | 200,000 | 11 | **Uniswap V3 via WETH** | 2 | 2 | +17.0 bp | +17.0 bp | split |
-| AERO/USDC | 25,000 | 12 | Aerodrome vAMM | 1 | 3 | +0.0 bp | +0.0 bp | single |
-| cbETH/USDC | 20 | 11 | **Uniswap V3 via WETH** | 2 | 2 | +1726.0 bp | +1726.0 bp | split |
+| WETH/USDC | 1 | 9 | PancakeSwap V3 0.01% | 1 | 2 | +0.0 bp | +0.0 bp | single |
+| WETH/USDC | 25 | 9 | PancakeSwap V3 0.01% | 1 | 4 | +4.0 bp | +4.0 bp | split |
+| USDC/WETH | 100,000 | 9 | PancakeSwap V3 0.01% | 1 | 3 | +9.0 bp | +9.0 bp | split |
+| WETH/cbBTC | 10 | 11 | PancakeSwap V3 0.01% | 1 | 3 | +0.0 bp | +0.0 bp | single |
+| WETH/DAI | 0.1 | 12 | **Uniswap V3 via USDC** | 2 | 4 | +0.0 bp | +0.0 bp | single |
+| USDC/DAI | 25,000 | 12 | Uniswap V3 0.01% | 1 | 4 | +3234.0 bp | +3234.0 bp | split |
+| DEGEN/USDC | 10,000 | 11 | **Aerodrome v/s via WETH** | 2 | 5 | +5.0 bp | +1.0 bp | split |
+| BRETT/USDC | 200,000 | 11 | **Uniswap V3 via WETH** | 2 | 2 | +18.0 bp | +18.0 bp | split |
+| AERO/USDC | 25,000 | 12 | Aerodrome vAMM | 1 | 4 | +0.0 bp | +0.0 bp | single |
+| cbETH/USDC | 20 | 11 | **Uniswap V3 via WETH** | 2 | 2 | +1727.0 bp | +1727.0 bp | split |
 
-**Multi-hop was the best route in 8 of 24 cases. Splitting was chosen in 8 of
-24, median net edge 7.0bp.**
+**Multi-hop was the best route in 8 of 24 cases. PancakeSwap V3 was the best
+single venue in 10 of 24. Splitting was chosen in 10 of 24, median net edge
+4.0bp.**
 
 Three things fall out, and all three are worth saying plainly:
 
@@ -109,12 +124,59 @@ cleverness.** cbETH/USDC at +1726bp means the direct pools are shallow enough
 that spreading the trade is worth seventeen percent. That is a statement about
 cbETH on Base.
 
+## Adding venues, and which ones are worth adding
+
+Every venue below is free: public contracts, public RPC, no key, no
+registration. What separates them is whether they hold liquidity worth routing
+to, which is a question you answer by measuring, not by counting integrations.
+`npm run probe:venues` does the measuring — it reads reserves, asks each fork's
+own router what it would pay, and **derives the fee from the two** rather than
+trusting a constant.
+
+**Added: PancakeSwap V3.** Its 0.01% tier prices better than anything else on
+Base for mid-size WETH/USDC. After adding it, it is the best single venue in 10
+of the 24 benchmark cases — one free venue changed the winner on 42% of them.
+Its fee tiers are not Uniswap's either: 0.25% where Uniswap has 0.30%.
+
+**Rejected: the V2 forks.** PancakeSwap V2, AlienBase and SwapBased all have
+live WETH/USDC pairs. They hold 0.2, 0.1 and 0.5 WETH respectively — a few
+hundred dollars each. They would never win a route, and each one costs a
+discovery call on every quote. Measured and left out; the probe script keeps the
+evidence.
+
+**Quotable but not yet executable: Uniswap V4.** V4 is live on Base and quotes
+competitively (the hookless 0.30%/60 pool prices within a few bp of V3). It has
+no factory — a pool is identified by its key, so discovery means enumerating
+`(fee, tickSpacing, hooks)` and letting the quoter revert on the rest, which
+works for hookless pools and cannot enumerate hooked ones at all. The blocker is
+execution: V4 settles through `UniversalRouter` with Permit2 and an encoded
+action sequence, not a router call. Quoting a venue this app cannot execute
+would break the rule the rest of it follows, so V4 stays out until the execution
+path is written. The probe script quotes it today.
+
+**Not viable: the OKX repos.** Checked all five:
+
+| Repo | What it actually is | Verdict |
+| --- | --- | --- |
+| `Web3-DEX-EVM-PMM` | RFQ onboarding for *private market makers* — you supply signed `OrderRFQ` quotes | Requires being an onboarded PMM counterparty. No public liquidity. |
+| `Web3-DEX-evm-intent-sdk` | Calldata builder for `Settlement.settle()` | Requires being a solver in their auction. |
+| `Web3-DEX-Router-EVM-V1` | The DexRouter contracts. Deployed on Base at `0x4409921a…`, exposing `smartSwapByOrderId` | Callable, but it is an *executor with no liquidity of its own*. Routing through it reaches the same Uniswap and Aerodrome pools this app already calls directly, plus a hop, plus its commission. |
+| `Web3-DEX-Router-Solana-V1` | Anchor programs | Solana. Different chain. |
+| `web3-solana-rfq-v2` | — | **404. The repository does not exist.** |
+
+None of them offer a free liquidity source for a Base router. Two are
+permissioned-counterparty infrastructure, one is a different chain, one is a
+pass-through executor, and one is not there. The OKX *aggregator API* would give
+routes, but it needs credentials, which is the dependency this project exists to
+avoid.
+
 ## How it works
 
 **Discovery.** Nothing is hardcoded but factory addresses. For a pair, the
 router asks Uniswap V2, SushiSwap and BaseSwap for their pair, Aerodrome for
-both its stable and volatile pool, and lists the V3 fee tiers — then repeats
-that through each intermediate. Every address in `src/lib/chain.ts` is checked
+both its stable and volatile pool, and lists the fee tiers of each
+concentrated-liquidity deployment — Uniswap V3 and PancakeSwap V3 — then repeats
+that through each intermediate. A V3 fork is a row in a table, not a code path. Every address in `src/lib/chain.ts` is checked
 for bytecode by `scripts/verify-addresses.sh`, and every token's `symbol()` and
 `decimals()` is read from the chain by `npm run verify:tokens`. Both run in CI.
 A token entry with the right address and the wrong decimals misprices every
@@ -157,6 +219,7 @@ pools it already quoted. The extra-hop cost is 70,000 gas, measured in
 | `contracts` — `GasProfile.t.sol` | The gas constants the router makes decisions with | fork |
 | `scripts/verify-addresses.sh` | Every hardcoded address still has bytecode | RPC |
 | `npm run verify:tokens` | Every token's on-chain symbol and decimals | RPC |
+| `npm run probe:venues` | Candidate venues: liquidity, derived fees, router selectors | RPC |
 
 The unit tests deliberately use no network. The fork tests prove the quoter
 agrees with the chain; the unit tests prove the arithmetic behaves at the edges
@@ -230,11 +293,17 @@ for that is a paid endpoint via `RPC_URL`, not more code.
 - **Public RPC rate-limits.** Set `RPC_URL` for anything beyond casual use.
 - **Twelve tokens.** Adding more is a line in `src/lib/chain.ts`; discovery does
   not care.
+- **No Uniswap V4.** Quotable today and measured by `npm run probe:venues`, but
+  it settles through `UniversalRouter` with Permit2 rather than a router call,
+  and this app does not quote what it cannot execute.
+- **Hooked V4 pools are unenumerable by design.** Even with V4 execution, a pool
+  behind an arbitrary hook address cannot be discovered by guessing keys.
 
 ## Layout
 
 ```
 src/lib/quote.ts        discovery, multi-hop candidates, ladder quoting, the splitter
+src/lib/chain.ts        every address, every venue, as data — V2 forks and V3 deployments
 src/lib/execute.ts      calldata for each venue's router, single and multi-hop
 src/lib/gas.ts          gas priced in the output token, no oracle
 src/lib/serve.ts        cache with coalescing, rate limit

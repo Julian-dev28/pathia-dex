@@ -32,6 +32,51 @@ export const UNIV3_FEE_TIERS = [100, 500, 3000, 10000] as const;
  */
 export const UNIV3_MULTIHOP_FEE_TIERS = [500, 3000] as const;
 
+/**
+ * Concentrated-liquidity deployments, as data.
+ *
+ * Uniswap V3 and its forks share a quoter ABI, so a fork is a table entry
+ * rather than a code path. What they do *not* share is the router: PancakeSwap
+ * forked Uniswap's original `SwapRouter`, which carries a `deadline` field in
+ * its swap params, while Uniswap moved to `SwapRouter02`, which does not.
+ * Encoding one against the other reverts every swap, so the difference is
+ * recorded here and checked in `scripts/probe-venues.ts` by reading the
+ * selectors out of the deployed bytecode.
+ *
+ * Fee tiers differ too: Pancake's third tier is 0.25% where Uniswap's is 0.30%.
+ */
+export type V3Deployment = {
+  name: string;
+  quoter: `0x${string}`;
+  router: `0x${string}`;
+  factory: `0x${string}`;
+  feeTiers: readonly number[];
+  multiHopTiers: readonly number[];
+  /** True when the router's swap params include a deadline (SwapRouter v1). */
+  routerHasDeadline: boolean;
+};
+
+export const V3_DEPLOYMENTS: V3Deployment[] = [
+  {
+    name: 'Uniswap V3',
+    quoter: UNIV3_QUOTER,
+    router: UNIV3_SWAP_ROUTER,
+    factory: UNIV3_FACTORY,
+    feeTiers: UNIV3_FEE_TIERS,
+    multiHopTiers: UNIV3_MULTIHOP_FEE_TIERS,
+    routerHasDeadline: false,
+  },
+  {
+    name: 'PancakeSwap V3',
+    quoter: '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997',
+    router: '0x1b81D678ffb9C0263b24A97847620C99d213eB14',
+    factory: '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865',
+    feeTiers: [100, 500, 2500, 10000],
+    multiHopTiers: [500, 2500],
+    routerHasDeadline: true,
+  },
+];
+
 export type Token = {
   symbol: string;
   name: string;

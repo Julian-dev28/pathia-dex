@@ -26,9 +26,18 @@ export default function Page() {
             <p>
               Nothing is hardcoded except factory addresses. For a given pair the router asks
               Uniswap V2, SushiSwap and BaseSwap for their pair, Aerodrome for both its stable
-              and volatile pool, and lists the Uniswap V3 fee tiers — then repeats all of that
-              through each intermediate token, so a two-hop route is a candidate on the same
-              footing as a direct one. Tiers with no pool revert at quote time and drop out.
+              and volatile pool, and lists the fee tiers of each concentrated-liquidity
+              deployment — Uniswap V3 and PancakeSwap V3 — then repeats all of that through
+              each intermediate token, so a two-hop route is a candidate on the same footing as
+              a direct one. Tiers with no pool revert at quote time and drop out.
+            </p>
+            <p className="mt-2">
+              A V3 fork is a row in a table, not a code path. What forks do <em>not</em> share
+              is the router: PancakeSwap forked Uniswap&rsquo;s original{' '}
+              <code className="mono">SwapRouter</code>, whose swap params carry a deadline,
+              while Uniswap moved to <code className="mono">SwapRouter02</code>, which does not.
+              Encoding one against the other reverts every swap on that venue, so the difference
+              is read out of the deployed bytecode rather than assumed.
             </p>
             <p className="mt-2">
               The candidate set is deliberately wide and pruned by price rather than by
@@ -119,6 +128,16 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
+              <tr>
+                <td>No Uniswap V4</td>
+                <td>
+                  V4 is live on Base and quotes competitively, but it settles through
+                  UniversalRouter with Permit2 and an encoded action sequence rather than a
+                  router call. This app does not quote what it cannot execute, so V4 stays out
+                  until that path is written. Hooked pools are unenumerable in any case — a pool
+                  behind an arbitrary hook address cannot be found by guessing keys.
+                </td>
+              </tr>
               <tr>
                 <td>Two hops maximum</td>
                 <td>

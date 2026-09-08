@@ -1,7 +1,7 @@
 {
-  "blockNumber": "51038629",
-  "generatedAt": "2026-09-08T11:24:11.522Z",
-  "count": 11,
+  "blockNumber": "51041860",
+  "generatedAt": "2026-09-08T13:11:56.844Z",
+  "count": 13,
   "cases": [
     {
       "label": "0.1 WETH -> USDC",
@@ -9,7 +9,7 @@
       "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "amountIn": "100000000000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 0.01%",
+      "venueLabel": "PancakeSwap V3 0.01%",
       "hops": 1,
       "path": [
         "0x4200000000000000000000000000000000000006",
@@ -21,11 +21,12 @@
       "stables": [
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
+      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
+      "v3HasDeadline": true,
       "v3Path": "0x4200000000000000000000000000000000000006000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "247581184",
-      "predictedSplitOut": "247581184",
-      "splitLegs": 1,
+      "predictedOut": "247141675",
+      "predictedSplitOut": "247141788",
+      "splitLegs": 2,
       "edgeBps": 0
     },
     {
@@ -34,7 +35,7 @@
       "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "amountIn": "1000000000000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 0.01%",
+      "venueLabel": "PancakeSwap V3 0.01%",
       "hops": 1,
       "path": [
         "0x4200000000000000000000000000000000000006",
@@ -46,11 +47,12 @@
       "stables": [
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
+      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
+      "v3HasDeadline": true,
       "v3Path": "0x4200000000000000000000000000000000000006000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "2474828509",
-      "predictedSplitOut": "2474828509",
-      "splitLegs": 1,
+      "predictedOut": "2471298487",
+      "predictedSplitOut": "2471307923",
+      "splitLegs": 3,
       "edgeBps": 0
     },
     {
@@ -59,24 +61,25 @@
       "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "amountIn": "10000000000000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 0.05%",
+      "venueLabel": "PancakeSwap V3 0.01%",
       "hops": 1,
       "path": [
         "0x4200000000000000000000000000000000000006",
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
       ],
       "fees": [
-        500
+        100
       ],
       "stables": [
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
-      "v3Path": "0x42000000000000000000000000000000000000060001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "24729223623",
-      "predictedSplitOut": "24732044204",
-      "splitLegs": 2,
-      "edgeBps": 1
+      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
+      "v3HasDeadline": true,
+      "v3Path": "0x4200000000000000000000000000000000000006000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "predictedOut": "24701163438",
+      "predictedSplitOut": "24707715616",
+      "splitLegs": 4,
+      "edgeBps": 2
     },
     {
       "label": "1000 USDC -> WETH",
@@ -84,22 +87,23 @@
       "tokenOut": "0x4200000000000000000000000000000000000006",
       "amountIn": "1000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 0.05%",
+      "venueLabel": "PancakeSwap V3 0.01%",
       "hops": 1,
       "path": [
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
         "0x4200000000000000000000000000000000000006"
       ],
       "fees": [
-        500
+        100
       ],
       "stables": [
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
-      "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA029130001f44200000000000000000000000000000000000006",
-      "predictedOut": "403763629675895666",
-      "predictedSplitOut": "403771580074998582",
+      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
+      "v3HasDeadline": true,
+      "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA029130000644200000000000000000000000000000000000006",
+      "predictedOut": "404534435779829163",
+      "predictedSplitOut": "404534933580943662",
       "splitLegs": 2,
       "edgeBps": 0
     },
@@ -109,23 +113,24 @@
       "tokenOut": "0x4200000000000000000000000000000000000006",
       "amountIn": "25000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 0.05%",
+      "venueLabel": "PancakeSwap V3 0.01%",
       "hops": 1,
       "path": [
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
         "0x4200000000000000000000000000000000000006"
       ],
       "fees": [
-        500
+        100
       ],
       "stables": [
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
-      "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA029130001f44200000000000000000000000000000000000006",
-      "predictedOut": "10089147965273080722",
-      "predictedSplitOut": "10089528238288563955",
-      "splitLegs": 2,
+      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
+      "v3HasDeadline": true,
+      "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA029130000644200000000000000000000000000000000000006",
+      "predictedOut": "10108352612684826925",
+      "predictedSplitOut": "10108669435105351572",
+      "splitLegs": 3,
       "edgeBps": 0
     },
     {
@@ -149,11 +154,12 @@
         false,
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
+      "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
+      "v3HasDeadline": false,
       "v3Path": "0x42000000000000000000000000000000000000060001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA029130001f450c5725949A6F0c72E6C4a641F24049A917DB0Cb",
-      "predictedOut": "123746876108413820450",
-      "predictedSplitOut": "123746876108413820450",
-      "splitLegs": 1,
+      "predictedOut": "123601300481224288496",
+      "predictedSplitOut": "123605512248511890619",
+      "splitLegs": 3,
       "edgeBps": 0
     },
     {
@@ -174,11 +180,12 @@
       "stables": [
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
+      "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
+      "v3HasDeadline": false,
       "v3Path": "0x42000000000000000000000000000000000000060001f4cbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
-      "predictedOut": "3155777",
-      "predictedSplitOut": "3155777",
-      "splitLegs": 1,
+      "predictedOut": "3150754",
+      "predictedSplitOut": "3150759",
+      "splitLegs": 3,
       "edgeBps": 0
     },
     {
@@ -199,11 +206,12 @@
       "stables": [
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
+      "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
+      "v3HasDeadline": false,
       "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA0291300006450c5725949A6F0c72E6C4a641F24049A917DB0Cb",
-      "predictedOut": "5001084603527287245519",
-      "predictedSplitOut": "5001084603527287245519",
-      "splitLegs": 1,
+      "predictedOut": "5001158642355879630175",
+      "predictedSplitOut": "5001411070600000298456",
+      "splitLegs": 2,
       "edgeBps": 0
     },
     {
@@ -227,12 +235,13 @@
         false,
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
+      "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
+      "v3HasDeadline": false,
       "v3Path": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed000bb842000000000000000000000000000000000000060001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "52697956",
-      "predictedSplitOut": "52708620",
-      "splitLegs": 2,
-      "edgeBps": 2
+      "predictedOut": "52802211",
+      "predictedSplitOut": "52809440",
+      "splitLegs": 3,
+      "edgeBps": 1
     },
     {
       "label": "500 AERO -> USDC",
@@ -240,24 +249,28 @@
       "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "amountIn": "500000000000000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 0.05%",
-      "hops": 1,
+      "venueLabel": "PancakeSwap V3 0.05/0.05% via WETH",
+      "hops": 2,
       "path": [
         "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
+        "0x4200000000000000000000000000000000000006",
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
       ],
       "fees": [
+        500,
         500
       ],
       "stables": [
+        false,
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
-      "v3Path": "0x940181a94A35A4569E4529A3CDfB74e38FD986310001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "328099645",
-      "predictedSplitOut": "328099645",
-      "splitLegs": 1,
-      "edgeBps": 0
+      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
+      "v3HasDeadline": true,
+      "v3Path": "0x940181a94A35A4569E4529A3CDfB74e38FD986310001f442000000000000000000000000000000000000060001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "predictedOut": "318766523",
+      "predictedSplitOut": "318879872",
+      "splitLegs": 2,
+      "edgeBps": 3
     },
     {
       "label": "10000 BRETT -> WETH",
@@ -265,24 +278,77 @@
       "tokenOut": "0x4200000000000000000000000000000000000006",
       "amountIn": "10000000000000000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 1.00%",
+      "venueLabel": "Uniswap V3 0.30%",
       "hops": 1,
       "path": [
         "0x532f27101965dd16442E59d40670FaF5eBB142E4",
         "0x4200000000000000000000000000000000000006"
       ],
       "fees": [
-        10000
+        3000
       ],
       "stables": [
         false
       ],
-      "router": "0x0000000000000000000000000000000000000000",
-      "v3Path": "0x532f27101965dd16442E59d40670FaF5eBB142E40027104200000000000000000000000000000000000006",
-      "predictedOut": "21680861315060514",
-      "predictedSplitOut": "21683013454636985",
+      "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
+      "v3HasDeadline": false,
+      "v3Path": "0x532f27101965dd16442E59d40670FaF5eBB142E4000bb84200000000000000000000000000000000000006",
+      "predictedOut": "21673486372693313",
+      "predictedSplitOut": "21673486372693313",
+      "splitLegs": 1,
+      "edgeBps": 0
+    },
+    {
+      "label": "2 WETH -> USDC",
+      "tokenIn": "0x4200000000000000000000000000000000000006",
+      "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "amountIn": "2000000000000000000",
+      "venueKind": "v3",
+      "venueLabel": "PancakeSwap V3 0.01%",
+      "hops": 1,
+      "path": [
+        "0x4200000000000000000000000000000000000006",
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      ],
+      "fees": [
+        100
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
+      "v3HasDeadline": true,
+      "v3Path": "0x4200000000000000000000000000000000000006000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "predictedOut": "4942334177",
+      "predictedSplitOut": "4942474014",
       "splitLegs": 4,
       "edgeBps": 0
+    },
+    {
+      "label": "0.5 cbBTC -> USDC",
+      "tokenIn": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+      "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "amountIn": "50000000",
+      "venueKind": "v3",
+      "venueLabel": "PancakeSwap V3 0.01%",
+      "hops": 1,
+      "path": [
+        "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+        "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      ],
+      "fees": [
+        100
+      ],
+      "stables": [
+        false
+      ],
+      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
+      "v3HasDeadline": true,
+      "v3Path": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "predictedOut": "39114325648",
+      "predictedSplitOut": "39192572324",
+      "splitLegs": 3,
+      "edgeBps": 1
     }
   ]
 }

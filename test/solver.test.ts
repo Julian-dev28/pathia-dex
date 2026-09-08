@@ -34,7 +34,7 @@ const venue = (id: string): Venue => ({
   label: id,
   family: 'v3',
   path: [WETH, USDC],
-  hops: [{ family: 'v3', fee: 500 }],
+  hops: [{ family: 'v3', fee: 500, dex: 0 }],
 });
 
 /** A synthetic constant-product curve, so expectations are exact. */

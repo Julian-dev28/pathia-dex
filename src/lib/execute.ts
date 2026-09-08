@@ -15,11 +15,18 @@
  */
 
 import { encodeFunctionData, parseAbi, type Address } from 'viem';
-import { UNIV3_SWAP_ROUTER, AERO_ROUTER, AERO_FACTORY, type Token } from './chain';
-import { univ3RouterAbi, aeroRouterAbi, v2RouterAbi, erc20Abi } from './abis';
+import { AERO_ROUTER, AERO_FACTORY, V3_DEPLOYMENTS, type Token } from './chain';
+import {
+  univ3RouterAbi,
+  v3RouterWithDeadlineAbi,
+  aeroRouterAbi,
+  v2RouterAbi,
+  erc20Abi,
+} from './abis';
 import { encodeV3Path, type Venue, type Hop } from './quote';
 
 const V3R = parseAbi(univ3RouterAbi);
+const V3R_DEADLINE = parseAbi(v3RouterWithDeadlineAbi);
 const AEROR = parseAbi(aeroRouterAbi);
 const V2R = parseAbi(v2RouterAbi);
 export const ERC20 = parseAbi(erc20Abi);
@@ -41,15 +48,9 @@ export function minOut(quotedOut: bigint, slippageBps: number): bigint {
 
 /** The router that will pull the input token, i.e. the address to approve. */
 export function spenderFor(venue: Venue): Address {
-  switch (venue.family) {
-    case 'v3':
-      return UNIV3_SWAP_ROUTER;
-    case 'aero':
-      return AERO_ROUTER;
-    case 'v2':
-      if (!venue.router) throw new Error(`v2 venue ${venue.id} has no router`);
-      return venue.router;
-  }
+  if (venue.family === 'aero') return AERO_ROUTER;
+  if (!venue.router) throw new Error(`venue ${venue.id} has no router`);
+  return venue.router;
 }
 
 /**
@@ -79,49 +80,87 @@ export function buildSwap(
 
   switch (venue.family) {
     case 'v3': {
-      const fees = venue.hops.map((h) => (h as Extract<Hop, { family: 'v3' }>).fee);
+      const v3hops = venue.hops as Extract<Hop, { family: 'v3' }>[];
+      const fees = v3hops.map((h) => h.fee);
+      const dep = V3_DEPLOYMENTS[v3hops[0].dex];
+      const router = dep.router;
+      const single = venue.hops.length === 1;
 
-      if (venue.hops.length === 1) {
+      // PancakeSwap forked Uniswap's original SwapRouter, whose params carry a
+      // deadline; Uniswap's SwapRouter02 does not. Same function name,
+      // different struct, different selector. Encoding the wrong one does not
+      // fail gracefully — it reverts every swap on that venue.
+      if (dep.routerHasDeadline) {
         return {
-          to: UNIV3_SWAP_ROUTER,
-          data: encodeFunctionData({
-            abi: V3R,
-            functionName: 'exactInputSingle',
-            args: [
-              {
-                tokenIn: path[0].address,
-                tokenOut: path[1].address,
-                fee: fees[0],
-                recipient,
-                amountIn,
-                amountOutMinimum,
-                // No price limit: the minimum-output check is the guard, and a
-                // sqrtPrice bound on top of it produces confusing partial-fill
-                // reverts for no additional safety.
-                sqrtPriceLimitX96: 0n,
-              },
-            ],
-          }),
+          to: router,
+          data: single
+            ? encodeFunctionData({
+                abi: V3R_DEADLINE,
+                functionName: 'exactInputSingle',
+                args: [
+                  {
+                    tokenIn: path[0].address,
+                    tokenOut: path[1].address,
+                    fee: fees[0],
+                    recipient,
+                    deadline,
+                    amountIn,
+                    amountOutMinimum,
+                    sqrtPriceLimitX96: 0n,
+                  },
+                ],
+              })
+            : encodeFunctionData({
+                abi: V3R_DEADLINE,
+                functionName: 'exactInput',
+                args: [
+                  {
+                    path: encodeV3Path(path, fees),
+                    recipient,
+                    deadline,
+                    amountIn,
+                    amountOutMinimum,
+                  },
+                ],
+              }),
           value: 0n,
         };
       }
 
       return {
-        to: UNIV3_SWAP_ROUTER,
-        data: encodeFunctionData({
-          abi: V3R,
-          functionName: 'exactInput',
-          args: [
-            {
-              path: encodeV3Path(path, fees),
-              recipient,
-              amountIn,
-              // The floor applies to the end of the path, not to each hop. An
-              // intermediate leg is allowed to come out wherever it comes out.
-              amountOutMinimum,
-            },
-          ],
-        }),
+        to: router,
+        data: single
+          ? encodeFunctionData({
+              abi: V3R,
+              functionName: 'exactInputSingle',
+              args: [
+                {
+                  tokenIn: path[0].address,
+                  tokenOut: path[1].address,
+                  fee: fees[0],
+                  recipient,
+                  amountIn,
+                  amountOutMinimum,
+                  // No price limit: the minimum-output check is the guard, and
+                  // a sqrtPrice bound on top of it produces confusing
+                  // partial-fill reverts for no additional safety.
+                  sqrtPriceLimitX96: 0n,
+                },
+              ],
+            })
+          : encodeFunctionData({
+              abi: V3R,
+              functionName: 'exactInput',
+              args: [
+                {
+                  path: encodeV3Path(path, fees),
+                  recipient,
+                  amountIn,
+                  // The floor applies to the end of the path, not to each hop.
+                  amountOutMinimum,
+                },
+              ],
+            }),
         value: 0n,
       };
     }

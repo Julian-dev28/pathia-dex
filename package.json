@@ -15,7 +15,8 @@
     "verify:addresses": "./scripts/verify-addresses.sh",
     "verify:tokens": "tsx scripts/verify-tokens.ts",
     "test:unit": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "probe:venues": "tsx scripts/probe-venues.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.0",
