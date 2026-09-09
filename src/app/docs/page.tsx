@@ -202,6 +202,61 @@ export default function Page() {
 
       <section className="section">
         <div className="section-head">
+          <h2 className="sec-label">API</h2>
+          <span className="section-meta">
+            <a href="/api/openapi">openapi.json</a>
+          </span>
+        </div>
+        <div className="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th>Endpoint</th>
+                <th>What it returns</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="mono">GET /api/quote</td>
+                <td>
+                  The solved route plus every venue curve behind it. Cached 3s with request
+                  coalescing; 120 requests per minute per IP.
+                </td>
+              </tr>
+              <tr>
+                <td className="mono">GET /api/venues</td>
+                <td>Every pool considered for a pair, including mid-route pools, with balances.</td>
+              </tr>
+              <tr>
+                <td className="mono">GET /api/stream</td>
+                <td>
+                  Server-sent events. A re-quote when a block changes the answer — coalesced to
+                  one every six seconds, silent when the price has not moved.
+                </td>
+              </tr>
+              <tr>
+                <td className="mono">GET /api/health</td>
+                <td>
+                  Chain height, block age, RPC latency. Returns 503 when the head goes stale,
+                  which is the failure a bare liveness check misses.
+                </td>
+              </tr>
+              <tr>
+                <td className="mono">GET /api/metrics</td>
+                <td>In-process counters and quote latency percentiles, for this instance only.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3" style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.55 }}>
+          No authentication, because there is nothing to authenticate: every endpoint reads
+          public chain state and the same calls work from anywhere. Amounts cross the wire as
+          base-unit integers in strings, since JSON has no bigint.
+        </p>
+      </section>
+
+      <section className="section">
+        <div className="section-head">
           <h2 className="sec-label">Independence</h2>
         </div>
         <div className="prose" style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--ink-2)', maxWidth: '78ch' }}>

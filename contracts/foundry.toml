@@ -9,5 +9,20 @@ optimizer_runs = 1_000_000
 via_ir = false
 fs_permissions = [{ access = "read", path = "./test/fixtures" }]
 
+# Throttle the fork's RPC traffic.
+#
+# These suites replay a dozen mainnet swaps, and each one pulls storage slots
+# on demand. Against a free public endpoint that is enough to get the
+# connection reset mid-test, which surfaces as
+# "database error: failed to get storage for 0x… connection reset" and reads
+# exactly like a broken test rather than a rate limit. Capping the request rate
+# trades a slower suite for one that finishes. 200 is roughly two-thirds of
+# Foundry’s default and was the point at which the suite stopped resetting
+# without becoming unusably slow.
+compute_units_per_second = 200
+# Retry a dropped fork request instead of failing the whole run on one blip.
+fork_retries = 5
+fork_retry_backoff = 1000
+
 [rpc_endpoints]
 base = "${BASE_RPC_URL}"

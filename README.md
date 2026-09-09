@@ -209,7 +209,9 @@ integer as a string, or that 404 means "no pool" rather than "wrong URL".
 
 **Container**: a multi-stage `Dockerfile` producing a standalone runtime image
 with no sources, no dev dependencies and no root user, and a `HEALTHCHECK` that
-uses the chain-freshness endpoint rather than a bare liveness probe.
+uses the chain-freshness endpoint rather than a bare liveness probe. It is
+written but **not yet built** — there was no Docker daemon on the machine it was
+authored on, so treat it as unverified until `docker build .` has run once.
 
 ## Adding venues, and which ones are worth adding
 
@@ -308,6 +310,11 @@ pools it already quoted. The extra-hop cost is 70,000 gas, measured in
 | `npm run verify:tokens` | Every token's on-chain symbol and decimals | RPC |
 | `npm run probe:venues` | Candidate venues: liquidity, derived fees, router selectors | RPC |
 | `npm run backtest` | Replays real Base swaps against the router, appends to the dataset | RPC |
+
+The fork suites share one public RPC endpoint and will fail on contention if
+run alongside a backtest — the failure looks like a broken test and is a rate
+limit. CI runs them in separate jobs for that reason. Locally, run one at a time
+or set `RPC_URL`.
 
 The unit tests deliberately use no network. The fork tests prove the quoter
 agrees with the chain; the unit tests prove the arithmetic behaves at the edges

@@ -1,6 +1,6 @@
 {
-  "blockNumber": "51041860",
-  "generatedAt": "2026-09-08T13:11:56.844Z",
+  "blockNumber": "51061109",
+  "generatedAt": "2026-09-08T23:53:44.788Z",
   "count": 13,
   "cases": [
     {
@@ -9,7 +9,7 @@
       "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "amountIn": "100000000000000000",
       "venueKind": "v3",
-      "venueLabel": "PancakeSwap V3 0.01%",
+      "venueLabel": "Uniswap V3 0.01%",
       "hops": 1,
       "path": [
         "0x4200000000000000000000000000000000000006",
@@ -21,12 +21,12 @@
       "stables": [
         false
       ],
-      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
-      "v3HasDeadline": true,
+      "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
+      "v3HasDeadline": false,
       "v3Path": "0x4200000000000000000000000000000000000006000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "247141675",
-      "predictedSplitOut": "247141788",
-      "splitLegs": 2,
+      "predictedOut": "248566834",
+      "predictedSplitOut": "248566834",
+      "splitLegs": 1,
       "edgeBps": 0
     },
     {
@@ -50,9 +50,9 @@
       "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
       "v3HasDeadline": true,
       "v3Path": "0x4200000000000000000000000000000000000006000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "2471298487",
-      "predictedSplitOut": "2471307923",
-      "splitLegs": 3,
+      "predictedOut": "2485502633",
+      "predictedSplitOut": "2485526095",
+      "splitLegs": 2,
       "edgeBps": 0
     },
     {
@@ -76,10 +76,10 @@
       "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
       "v3HasDeadline": true,
       "v3Path": "0x4200000000000000000000000000000000000006000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "24701163438",
-      "predictedSplitOut": "24707715616",
-      "splitLegs": 4,
-      "edgeBps": 2
+      "predictedOut": "24845982147",
+      "predictedSplitOut": "24846608466",
+      "splitLegs": 2,
+      "edgeBps": 0
     },
     {
       "label": "1000 USDC -> WETH",
@@ -102,9 +102,9 @@
       "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
       "v3HasDeadline": true,
       "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA029130000644200000000000000000000000000000000000006",
-      "predictedOut": "404534435779829163",
-      "predictedSplitOut": "404534933580943662",
-      "splitLegs": 2,
+      "predictedOut": "402230363392250323",
+      "predictedSplitOut": "402233339707735628",
+      "splitLegs": 3,
       "edgeBps": 0
     },
     {
@@ -128,10 +128,10 @@
       "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
       "v3HasDeadline": true,
       "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA029130000644200000000000000000000000000000000000006",
-      "predictedOut": "10108352612684826925",
-      "predictedSplitOut": "10108669435105351572",
-      "splitLegs": 3,
-      "edgeBps": 0
+      "predictedOut": "10051915265439721990",
+      "predictedSplitOut": "10053891677714306604",
+      "splitLegs": 4,
+      "edgeBps": 1
     },
     {
       "label": "0.05 WETH -> DAI",
@@ -157,8 +157,8 @@
       "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
       "v3HasDeadline": false,
       "v3Path": "0x42000000000000000000000000000000000000060001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA029130001f450c5725949A6F0c72E6C4a641F24049A917DB0Cb",
-      "predictedOut": "123601300481224288496",
-      "predictedSplitOut": "123605512248511890619",
+      "predictedOut": "124217620965556216312",
+      "predictedSplitOut": "124224565347508376640",
       "splitLegs": 3,
       "edgeBps": 0
     },
@@ -168,24 +168,24 @@
       "tokenOut": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
       "amountIn": "1000000000000000000",
       "venueKind": "v3",
-      "venueLabel": "Uniswap V3 0.05%",
+      "venueLabel": "PancakeSwap V3 0.01%",
       "hops": 1,
       "path": [
         "0x4200000000000000000000000000000000000006",
         "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf"
       ],
       "fees": [
-        500
+        100
       ],
       "stables": [
         false
       ],
-      "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
-      "v3HasDeadline": false,
-      "v3Path": "0x42000000000000000000000000000000000000060001f4cbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
-      "predictedOut": "3150754",
-      "predictedSplitOut": "3150759",
-      "splitLegs": 3,
+      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
+      "v3HasDeadline": true,
+      "v3Path": "0x4200000000000000000000000000000000000006000064cbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+      "predictedOut": "3168381",
+      "predictedSplitOut": "3168381",
+      "splitLegs": 1,
       "edgeBps": 0
     },
     {
@@ -209,8 +209,8 @@
       "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
       "v3HasDeadline": false,
       "v3Path": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA0291300006450c5725949A6F0c72E6C4a641F24049A917DB0Cb",
-      "predictedOut": "5001158642355879630175",
-      "predictedSplitOut": "5001411070600000298456",
+      "predictedOut": "5001319201096351315211",
+      "predictedSplitOut": "5001608262376670926540",
       "splitLegs": 2,
       "edgeBps": 0
     },
@@ -238,10 +238,10 @@
       "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
       "v3HasDeadline": false,
       "v3Path": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed000bb842000000000000000000000000000000000000060001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "52802211",
-      "predictedSplitOut": "52809440",
-      "splitLegs": 3,
-      "edgeBps": 1
+      "predictedOut": "52150377",
+      "predictedSplitOut": "52154996",
+      "splitLegs": 4,
+      "edgeBps": 0
     },
     {
       "label": "500 AERO -> USDC",
@@ -249,28 +249,25 @@
       "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "amountIn": "500000000000000000000",
       "venueKind": "v3",
-      "venueLabel": "PancakeSwap V3 0.05/0.05% via WETH",
-      "hops": 2,
+      "venueLabel": "Uniswap V3 0.05%",
+      "hops": 1,
       "path": [
         "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
-        "0x4200000000000000000000000000000000000006",
         "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
       ],
       "fees": [
-        500,
         500
       ],
       "stables": [
-        false,
         false
       ],
-      "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
-      "v3HasDeadline": true,
-      "v3Path": "0x940181a94A35A4569E4529A3CDfB74e38FD986310001f442000000000000000000000000000000000000060001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "318766523",
-      "predictedSplitOut": "318879872",
+      "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
+      "v3HasDeadline": false,
+      "v3Path": "0x940181a94A35A4569E4529A3CDfB74e38FD986310001f4833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "predictedOut": "307489375",
+      "predictedSplitOut": "307513000",
       "splitLegs": 2,
-      "edgeBps": 3
+      "edgeBps": 0
     },
     {
       "label": "10000 BRETT -> WETH",
@@ -293,9 +290,9 @@
       "router": "0x2626664c2603336E57B271c5C0b26F421741e481",
       "v3HasDeadline": false,
       "v3Path": "0x532f27101965dd16442E59d40670FaF5eBB142E4000bb84200000000000000000000000000000000000006",
-      "predictedOut": "21673486372693313",
-      "predictedSplitOut": "21673486372693313",
-      "splitLegs": 1,
+      "predictedOut": "21300874592599539",
+      "predictedSplitOut": "21301166341303491",
+      "splitLegs": 3,
       "edgeBps": 0
     },
     {
@@ -319,9 +316,9 @@
       "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
       "v3HasDeadline": true,
       "v3Path": "0x4200000000000000000000000000000000000006000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "4942334177",
-      "predictedSplitOut": "4942474014",
-      "splitLegs": 4,
+      "predictedOut": "4970805495",
+      "predictedSplitOut": "4970856047",
+      "splitLegs": 2,
       "edgeBps": 0
     },
     {
@@ -345,8 +342,8 @@
       "router": "0x1b81D678ffb9C0263b24A97847620C99d213eB14",
       "v3HasDeadline": true,
       "v3Path": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf000064833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "predictedOut": "39114325648",
-      "predictedSplitOut": "39192572324",
+      "predictedOut": "39116755791",
+      "predictedSplitOut": "39193841461",
       "splitLegs": 3,
       "edgeBps": 1
     }
