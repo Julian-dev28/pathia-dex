@@ -51,6 +51,12 @@ export function Terminal() {
   const [amount, setAmount] = useState('1');
   const [slippageBps, setSlippageBps] = useState(50);
   const [acknowledgedImpact, setAcknowledgedImpact] = useState(false);
+  const [advice, setAdvice] = useState<{
+    recommendedBps: number;
+    confidence: 'high' | 'medium' | 'low';
+    savedVsDefaultBps: number;
+    driftP95Bps: number;
+  } | null>(null);
 
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -116,6 +122,40 @@ export function Terminal() {
 
   // A new pair or size invalidates any acknowledgement of the old one.
   useEffect(() => setAcknowledgedImpact(false), [inSym, outSym, amount]);
+
+  /**
+   * Slippage advice, fetched separately and deliberately not blocking.
+   *
+   * The analysis costs a second quote in the opposite direction plus a log
+   * query, which is far too slow to sit in front of the trade form. It arrives
+   * when it arrives; until then the form works exactly as it did. Nothing here
+   * changes the tolerance on the user's behalf — it offers, they apply.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    setAdvice(null);
+    if (amountIn <= 0n || inSym === outSym) return;
+    const t = setTimeout(() => {
+      fetch(`/api/analyze?in=${inSym}&out=${outSym}&amount=${encodeURIComponent(amount)}&slippage=${slippageBps}`, {
+        cache: 'no-store',
+      })
+        .then((r) => r.json())
+        .then((body) => {
+          if (cancelled || body.error || !body.recommendation) return;
+          setAdvice(body.recommendation);
+        })
+        .catch(() => {
+          /* advice is optional; the form does not depend on it */
+        });
+    }, 900);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // slippageBps is deliberately absent: the advice does not depend on the
+    // current tolerance, and including it would refetch on every click.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inSym, outSym, amount, amountIn]);
 
   const route = quote?.route;
   const execVenue = route?.single.allocations[0]?.venue ?? null;
@@ -308,6 +348,37 @@ export function Terminal() {
               ))}
             </div>
           </div>
+
+          {advice && advice.recommendedBps !== slippageBps && (
+            <div className="advice mt-2">
+              <span>
+                {advice.confidence === 'low' ? (
+                  <>
+                    Too few recent trades to measure this pair&rsquo;s drift, so{' '}
+                    <strong>{(advice.recommendedBps / 100).toFixed(2)}%</strong> is the safe
+                    default rather than a measurement.
+                  </>
+                ) : (
+                  <>
+                    This pair moved <strong>{advice.driftP95Bps.toFixed(2)} bp</strong> or less in
+                    95% of recent inclusion windows.{' '}
+                    <strong>{(advice.recommendedBps / 100).toFixed(2)}%</strong> covers it
+                    {advice.savedVsDefaultBps > 0 && (
+                      <> and posts {advice.savedVsDefaultBps} bp less to a sandwicher</>
+                    )}
+                    .
+                  </>
+                )}
+              </span>
+              <button
+                className="link-btn"
+                type="button"
+                onClick={() => setSlippageBps(advice.recommendedBps)}
+              >
+                Use {(advice.recommendedBps / 100).toFixed(2)}%
+              </button>
+            </div>
+          )}
 
           {error && (
             <div className="err mt-3">

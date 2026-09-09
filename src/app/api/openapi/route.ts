@@ -24,7 +24,7 @@ export async function GET() {
     openapi: '3.1.0',
     info: {
       title: 'Pathia DEX',
-      version: '0.2.0',
+      version: '0.3.0',
       description:
         'On-chain route solver for Base. Quotes every venue from pool state and solves the ' +
         'optimal split. No authentication: every endpoint reads public chain state, and the ' +
@@ -95,6 +95,81 @@ export async function GET() {
             400: { description: 'Unknown token, identical tokens, or an unparseable amount' },
             404: { description: 'No pool quotes this pair on Base' },
             429: { description: 'Rate limited. Retry-After header is set.' },
+          },
+        },
+      },
+      '/api/analyze': {
+        get: {
+          summary: 'Execution intelligence for a pair',
+          description:
+            'Five measurements derived from quoting the pair in both directions: sandwich ' +
+            'exposure at a given slippage, a slippage recommendation drawn from measured price ' +
+            'drift, capacity at several impact budgets, liquidity fragmentation, and the best ' +
+            'cross-venue round trip. Cached 20s.',
+          parameters: [
+            { name: 'in', in: 'query', schema: { type: 'string' } },
+            { name: 'out', in: 'query', schema: { type: 'string' } },
+            { name: 'amount', in: 'query', schema: { type: 'string' } },
+            {
+              name: 'slippage',
+              in: 'query',
+              description: 'Tolerance in basis points to price the exposure against.',
+              schema: { type: 'integer', default: 50 },
+            },
+          ],
+          responses: {
+            200: {
+              description: 'Analysis',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      exposure: {
+                        type: 'object',
+                        description:
+                          'quotedOut minus the on-chain floor: the most a sandwich can extract. ' +
+                          'Exact, not estimated — it is the gap the user authorised.',
+                      },
+                      drift: {
+                        type: 'object',
+                        nullable: true,
+                        description:
+                          'Absolute price change over an inclusion window, in basis points, ' +
+                          'measured from Uniswap V3 Swap events. Null when the pair has not ' +
+                          'traded enough recently to measure.',
+                      },
+                      recommendation: {
+                        type: 'object',
+                        description:
+                          'Slippage drawn from drift, widened when the sample is small. Never ' +
+                          'tightens below the wallet default on a low-confidence sample.',
+                      },
+                      capacity: {
+                        type: 'array',
+                        description:
+                          'Largest trade per impact budget. `atLeast` means the quoted range ' +
+                          'was entirely within budget, so the figure is a lower bound.',
+                      },
+                      fragmentation: {
+                        type: 'object',
+                        description: 'Share of optimal execution happening away from the best venue.',
+                      },
+                      arb: {
+                        type: 'object',
+                        nullable: true,
+                        description:
+                          'Best two-venue round trip and the size that maximises it. Usually ' +
+                          'unprofitable: these close within a block on Base.',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Bad pair or amount' },
+            404: { description: 'No liquidity' },
+            429: { description: 'Rate limited' },
           },
         },
       },

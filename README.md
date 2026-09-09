@@ -169,6 +169,68 @@ What it cannot correct for: *why* they routed as they did. A trade that looks
 beatable may have been a deliberate venue choice, an MEV-protected order, or one
 leg of an intent that settled elsewhere. The page says so.
 
+## Execution tools
+
+Five things a swap interface could tell you and none of them do. All of it falls
+out of quoting the pair in both directions — the forward ladder a quote needs
+anyway, plus one reverse ladder — so the whole suite is one request:
+`GET /api/analyze`.
+
+**1 · Sandwich exposure.** A slippage tolerance is not a safety margin, it is a
+standing offer: an attacker can push the pool until you receive exactly your
+minimum and keep the difference. So the exposure is `quoted − floor`, which is
+arithmetic on a number the user authorised rather than an estimate. On 1 WETH at
+the stock 0.5% that is about **$12 posted to whoever wants it**.
+
+**2 · Slippage measured, not guessed.** Every wallet ships 0.5% and nobody
+changes it. This measures how much the pair's price *actually* moves over a
+six-block inclusion window and recommends a tolerance that covers it. WETH/USDC
+drifts a few basis points; the default is several times wider than the market it
+is protecting against.
+
+The measurement is nearly free: Uniswap V3 Swap events carry `sqrtPriceX96`, so
+**one log query reconstructs a pool's entire price series** — no archive node,
+no per-block calls, no price feed.
+
+Getting this right took three corrections, all of which produced a confident
+wrong answer first:
+
+- *A pool existing is not a pool trading.* The factory returns an address for
+  tiers nobody uses. Taking the first tier that resolved measured an abandoned
+  pool and had DEGEN looking calmer than ETH. Now every tier is measured and the
+  busiest one wins.
+- *A hub token is not a constant.* The first version skipped any leg touching
+  USDC. But WETH/USDC moves several bp over an inclusion window — it is a risk
+  leg, not a numeraire — so cbETH/USDC reported cbETH's drift against ETH
+  (0.01bp, true and irrelevant) while ignoring the ETH/USD move that dominates
+  the trade.
+- *A small sample is not evidence.* Twenty-three windows on a thin pool is not
+  four hundred on WETH/USDC. The multiplier widens as the sample shrinks, and
+  below fifty observations the recommendation **refuses to tighten below the
+  wallet default at all**. A tool that exists to reduce risk must not increase it
+  on the pairs it understands least.
+
+**3 · Capacity.** How much the pair absorbs before impact exceeds 10, 50 or 100
+bp. The first question a desk asks, and no interface answers it. (Its first
+implementation returned zero for everything: dividing an 18-decimal input by a
+6-decimal output truncated to zero before the comparison. It is cross-multiplied
+now, and there is a test for exactly that shape.)
+
+**4 · Fragmentation.** What share of optimal execution happens away from the
+single best venue. Published precisely because it is sometimes unflattering — on
+a deep pair at small size this number says routing does not matter, and that is
+worth knowing.
+
+**5 · Cross-venue round trip.** Both legs move against you as size grows, so
+profit is concave and the optimum is a *specific size* rather than as much as
+possible — taking the maximum is how a naive searcher turns an edge into a loss.
+It will almost always report nothing: these are contested by searchers with far
+better latency and close within a block. Reporting nothing is the honest answer.
+
+The trade form uses the second of these directly — it offers the measured
+tolerance next to the slippage selector, with one click to apply, and never
+changes it on the user's behalf.
+
 ## Storage, scheduling and streaming
 
 The backtest needed somewhere to put results, which is where a project like this
@@ -302,7 +364,7 @@ pools it already quoted. The extra-hop cost is 70,000 gas, measured in
 
 | Suite | What it covers | Network |
 | --- | --- | --- |
-| `npm run test:unit` | 58 tests: constant-product maths, hop chaining, ladders, interpolation bounds, the splitter, gas-adjusted route choice, slippage floors, path encoding, amount parsing, and the backtest statistics | none |
+| `npm run test:unit` | 78 tests: constant-product maths, hop chaining, ladders, interpolation bounds, the splitter, gas-adjusted route choice, slippage floors, path encoding, amount parsing, capacity across decimal mismatches, exposure and slippage recommendation, and the backtest statistics | none |
 | `contracts` — `Prediction.t.sol` | Off-chain prediction vs. realised fill, 11 cases, mainnet fork | fork |
 | `contracts` — `SplitRouter.t.sol` | Atomic split execution, approval hygiene, the call-proxy exploit | fork |
 | `contracts` — `GasProfile.t.sol` | The gas constants the router makes decisions with | fork |
@@ -408,10 +470,12 @@ src/lib/chain.ts        every address, every venue, as data — V2 forks and V3 
 src/lib/execute.ts      calldata for each venue's router, single and multi-hop
 src/lib/gas.ts          gas priced in the output token, no oracle
 src/lib/serve.ts        cache with coalescing, rate limit
+src/lib/exposure.ts     sandwich exposure, drift measured from Swap logs
+src/lib/arb.ts          round-trip search, capacity, fragmentation
 src/lib/backtest.ts     log decoding, trade replay, summary statistics
 src/lib/dataset.ts      reads the committed backtest dataset
 src/lib/log.ts          structured logging and in-process metrics
-src/app/api/            quote, venues, stream (SSE), health, metrics, openapi
+src/app/api/            quote, analyze, venues, stream (SSE), health, metrics, openapi
 data/backtest.jsonl     append-only dataset, written by the scheduled worker
 contracts/src           SplitRouter.sol — written, tested, not deployed
 contracts/test          prediction-vs-fill, split router, gas profile

@@ -23,6 +23,8 @@ import {
   type V2State,
 } from '@/lib/quote';
 import { minOut } from '@/lib/execute';
+import { capacity, fragmentation } from '@/lib/arb';
+import { exposureAt, recommendSlippage } from '@/lib/exposure';
 import { toBase, fromBase } from '@/lib/format';
 import { TOKENS, bySymbol } from '@/lib/chain';
 
@@ -380,5 +382,161 @@ describe('amount parsing', () => {
 
   it('ignores thousands separators', () => {
     expect(toBase('1,000', USDC)).toBe(1_000_000_000n);
+  });
+});
+
+describe('capacity', () => {
+  const sizes = ladder(100n * 10n ** 18n);
+
+  // 18-decimal in, 6-decimal out: the shape that broke the first implementation,
+  // where dividing amountOut by amountIn truncated to zero and every budget
+  // reported a capacity of nothing.
+  const curve: VenueCurve = (() => {
+    const s: V2State = {
+      reserveIn: 5_000n * 10n ** 18n,
+      reserveOut: 12_000_000n * 10n ** 6n,
+      feeBps: 30,
+    };
+    return {
+      venue: venue('deep'),
+      rungs: sizes.map((amountIn) => ({ amountIn, amountOut: v2AmountOut(amountIn, s) })),
+      gasEstimate: 100_000n,
+    };
+  })();
+
+  it('returns a non-zero size across a decimal mismatch', () => {
+    expect(capacity(curve, 50)).toBeGreaterThan(0n);
+  });
+
+  it('is monotone in the impact budget', () => {
+    expect(capacity(curve, 100)).toBeGreaterThanOrEqual(capacity(curve, 10));
+  });
+
+  it('never exceeds the top of the ladder', () => {
+    const top = curve.rungs[curve.rungs.length - 1].amountIn;
+    expect(capacity(curve, 10_000)).toBeLessThanOrEqual(top);
+  });
+
+  it('the size it returns really is within budget', () => {
+    for (const budget of [10, 50, 100]) {
+      const size = capacity(curve, budget);
+      if (size === 0n) continue;
+      const first = curve.rungs[0];
+      const out = interpolate(curve, size);
+      const denominator = size * first.amountOut;
+      const impact = Number(((denominator - out * first.amountIn) * 10_000n) / denominator);
+      // One basis point of slack for the search landing on a boundary.
+      expect(impact).toBeLessThanOrEqual(budget + 1);
+    }
+  });
+
+  it('is zero for a curve with too few rungs to measure', () => {
+    expect(capacity({ ...curve, rungs: [] }, 50)).toBe(0n);
+    expect(capacity({ ...curve, rungs: [curve.rungs[0]] }, 50)).toBe(0n);
+  });
+});
+
+describe('fragmentation', () => {
+  it('is zero when everything routes to the best venue', () => {
+    expect(fragmentation([{ venue: venue('a'), amountIn: 100n }], 'a', 100n)).toBe(0);
+  });
+
+  it('is the share going elsewhere', () => {
+    const allocs = [
+      { venue: venue('a'), amountIn: 70n },
+      { venue: venue('b'), amountIn: 30n },
+    ];
+    expect(fragmentation(allocs, 'a', 100n)).toBeCloseTo(30);
+  });
+
+  it('handles an empty split without dividing by zero', () => {
+    expect(fragmentation([], 'a', 100n)).toBe(0);
+    expect(fragmentation([{ venue: venue('a'), amountIn: 1n }], 'a', 0n)).toBe(0);
+  });
+});
+
+describe('exposure', () => {
+  it('is exactly the gap the user authorised', () => {
+    const e = exposureAt(1_000_000n, 50);
+    expect(e.floor).toBe(995_000n);
+    expect(e.exposure).toBe(5_000n);
+    expect(e.exposureBps).toBe(50);
+  });
+
+  it('is zero at zero slippage', () => {
+    expect(exposureAt(1_000_000n, 0).exposure).toBe(0n);
+  });
+
+  it('grows with the tolerance', () => {
+    expect(exposureAt(1_000_000n, 100).exposure).toBeGreaterThan(
+      exposureAt(1_000_000n, 10).exposure,
+    );
+  });
+
+  it('handles a zero quote without dividing by zero', () => {
+    const e = exposureAt(0n, 50);
+    expect(e.exposure).toBe(0n);
+    expect(e.exposureBps).toBe(0);
+  });
+});
+
+describe('recommendSlippage', () => {
+  const drift = (p95: number, observations = 400) => ({
+    pool: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+    observations,
+    fromBlock: '1',
+    toBlock: '2',
+    p50: p95 / 4,
+    p95,
+    p99: p95 * 1.4,
+    max: p95 * 2,
+  });
+
+  it('doubles measured drift when the sample is large', () => {
+    expect(recommendSlippage(drift(20, 400)).recommendedBps).toBe(40);
+    expect(recommendSlippage(drift(20, 400)).confidence).toBe('high');
+  });
+
+  it('widens the multiplier when the sample is only moderate', () => {
+    // Same drift, less evidence, so more headroom.
+    expect(recommendSlippage(drift(20, 100)).recommendedBps).toBe(60);
+    expect(recommendSlippage(drift(20, 100)).confidence).toBe('medium');
+  });
+
+  it('refuses to tighten below the default on a thin sample', () => {
+    // The feature exists to reduce risk. On the pairs it understands least it
+    // must not increase it, however calm the handful of observations looked.
+    const r = recommendSlippage(drift(0.01, 23));
+    expect(r.confidence).toBe('low');
+    expect(r.recommendedBps).toBe(50);
+    expect(r.savedVsDefaultBps).toBe(0);
+    expect(r.reason).toMatch(/too thin/);
+  });
+
+  it('floors at 5bp so ordinary noise does not revert the trade', () => {
+    expect(recommendSlippage(drift(0.1, 400)).recommendedBps).toBe(5);
+  });
+
+  it('caps at 200bp rather than recommending something absurd', () => {
+    expect(recommendSlippage(drift(500, 400)).recommendedBps).toBe(200);
+  });
+
+  it('falls back to the conservative default when drift is unmeasurable', () => {
+    const r = recommendSlippage(null);
+    expect(r.recommendedBps).toBe(50);
+    expect(r.savedVsDefaultBps).toBe(0);
+    expect(r.confidence).toBe('low');
+    expect(r.reason).toMatch(/not enough/);
+  });
+
+  it('reports what tightening from the wallet default saves', () => {
+    // p95 2.5bp on a large sample doubles to 5bp, saving 45bp of exposure.
+    expect(recommendSlippage(drift(2.5, 400)).savedVsDefaultBps).toBe(45);
+  });
+
+  it('never recommends more exposure than the wallet default', () => {
+    for (const [p95, n] of [[0.01, 23], [4, 400], [50, 100], [500, 400]] as [number, number][]) {
+      expect(recommendSlippage(drift(p95, n)).recommendedBps).toBeLessThanOrEqual(200);
+    }
   });
 });

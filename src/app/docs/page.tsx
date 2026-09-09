@@ -224,6 +224,14 @@ export default function Page() {
                 </td>
               </tr>
               <tr>
+                <td className="mono">GET /api/analyze</td>
+                <td>
+                  Sandwich exposure, a slippage recommendation measured from real price drift,
+                  capacity, fragmentation, and the best cross-venue round trip — all from
+                  quoting the pair in both directions. Cached 20s.
+                </td>
+              </tr>
+              <tr>
                 <td className="mono">GET /api/venues</td>
                 <td>Every pool considered for a pair, including mid-route pools, with balances.</td>
               </tr>

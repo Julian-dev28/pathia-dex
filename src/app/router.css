@@ -387,3 +387,18 @@
 /* The direction arrow is a fixed column so the price above it does not shift
    sideways when a tick changes direction. */
 .tape-line > span:nth-child(3) { width: 12px; text-align: center; }
+
+/* ── slippage advice ──────────────────────────────────────────────────── */
+
+/* An offer, not a warning: this is information the user can act on, so it sits
+   in the accent wash rather than the amber one reserved for caution. */
+.advice {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding: 9px 12px;
+  font-size: 12.5px; line-height: 1.5;
+  color: var(--accent-ink);
+  background: var(--accent-wash);
+  border-radius: var(--radius);
+}
+.advice span { flex: 1; min-width: 220px; }
+.advice strong { font-weight: 600; }

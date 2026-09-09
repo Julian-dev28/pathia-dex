@@ -419,6 +419,24 @@ export function ladder(amountIn: bigint, rungs = 12): bigint[] {
   return out;
 }
 
+/**
+ * A ladder that spans well above the trade as well as below it.
+ *
+ * The plain `ladder` stops at the requested amount, which is all a quote needs.
+ * Capacity — "how much can this pair absorb" — is a question about sizes the
+ * user did *not* ask for, and a ladder that stops at their size can only ever
+ * answer "at least what you typed". This reaches 32x above and 256x below.
+ */
+export function analysisLadder(amountIn: bigint, above = 32n, rungs = 13): bigint[] {
+  const top = amountIn * above;
+  const out: bigint[] = [];
+  for (let i = 0; i < rungs; i++) {
+    const v = top / (1n << BigInt(rungs - 1 - i));
+    if (v > 0n && (out.length === 0 || v > out[out.length - 1])) out.push(v);
+  }
+  return out;
+}
+
 /** Build the contract call that quotes one venue at one size. */
 function quoteCall(v: Venue, size: bigint): Call | null {
   if (v.family === 'v3') {
