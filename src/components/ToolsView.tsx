@@ -4,18 +4,29 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TOKENS, bySymbol, EXPLORER } from '@/lib/chain';
 import { sig, bps, addr } from '@/lib/format';
 import { TokenSelect } from './TokenSelect';
+import { CycleRoute } from './CycleRoute';
+import {
+  Card,
+  Answer,
+  Answers,
+  Reveal,
+  Chip,
+  Empty,
+  ErrorNote,
+  Loading,
+  PageHead,
+  Segmented,
+} from './ui';
 
 type Analysis = {
   tokenIn: { symbol: string; decimals: number };
   tokenOut: { symbol: string; decimals: number };
   blockNumber: string;
   quotedOut: string;
-  bestVenue: string | null;
   latencyMs: number;
   exposure: {
     slippageBps: number;
     exposure: string;
-    floor: string;
     atRecommended: { slippageBps: number; exposure: string };
     savedByTightening: string;
   };
@@ -26,7 +37,6 @@ type Analysis = {
     observations: number;
     p50: number;
     p95: number;
-    p99: number;
     max: number;
     inclusionBlocks: number;
   } | null;
@@ -51,6 +61,14 @@ type Analysis = {
 
 const SLIPPAGE_CHOICES = [10, 30, 50, 100];
 
+/**
+ * Execution tools.
+ *
+ * Each tool is one card that leads with its answer. The previous version opened
+ * every section with a paragraph explaining its own methodology, which meant
+ * five paragraphs stood between the reader and five numbers. The methodology is
+ * all still here, one click down.
+ */
 export function ToolsView() {
   const [inSym, setInSym] = useState('WETH');
   const [outSym, setOutSym] = useState('USDC');
@@ -95,293 +113,260 @@ export function ToolsView() {
     return () => clearTimeout(t);
   }, [run]);
 
-  const dec = (v: string, decimals: number) => Number(v) / 10 ** decimals;
+  const num = (v: string, decimals: number) =>
+    (Number(v) / 10 ** decimals).toLocaleString('en-US', { maximumFractionDigits: 4 });
 
   return (
     <>
-      <div className="page-head">
-        <h1 className="page-title">Execution tools</h1>
-        <p className="page-sub">
-          Five measurements a swap interface could show you and none of them do. All of it falls
-          out of quoting the pair in both directions — the same work a quote already does.
-        </p>
-      </div>
+      <PageHead
+        title="Execution tools"
+        lede="Five things a swap screen could tell you, and none of them do."
+      />
 
-      <section className="section">
-        <div className="section-head">
-          <h2 className="sec-label">Trade</h2>
-          <div className="section-meta flex items-center gap-2">
-            <input
-              className="tsel-trigger"
-              style={{ width: 96 }}
-              value={amount}
-              inputMode="decimal"
-              onChange={(e) => setAmount(e.target.value)}
-              aria-label="Amount"
-            />
-            <TokenSelect value={inSym} onChange={setInSym} tokens={TOKENS} exclude={outSym} />
-            <span className="mut">→</span>
-            <TokenSelect value={outSym} onChange={setOutSym} tokens={TOKENS} exclude={inSym} />
-            <span className="seg" style={{ marginLeft: 8 }}>
-              {SLIPPAGE_CHOICES.map((s) => (
-                <button
-                  key={s}
-                  className={`range-btn${slippageBps === s ? ' on' : ''}`}
-                  onClick={() => setSlippageBps(s)}
-                  type="button"
-                >
-                  {(s / 100).toFixed(2)}%
-                </button>
-              ))}
-            </span>
-          </div>
+      <Card title="Set up a trade">
+        <div className="c-controls">
+          <input
+            className="c-input"
+            value={amount}
+            inputMode="decimal"
+            onChange={(e) => setAmount(e.target.value)}
+            aria-label="Amount"
+          />
+          <TokenSelect value={inSym} onChange={setInSym} tokens={TOKENS} exclude={outSym} />
+          <span className="c-arrow">→</span>
+          <TokenSelect value={outSym} onChange={setOutSym} tokens={TOKENS} exclude={inSym} />
         </div>
-        {error && <div className="err">{error}</div>}
-        {loading && !data && <div className="empty">Quoting both directions…</div>}
-      </section>
+        <div className="c-controls" style={{ marginTop: 12 }}>
+          <span className="c-ctl-label">Slippage</span>
+          <Segmented
+            label="Slippage"
+            value={slippageBps}
+            onChange={setSlippageBps}
+            options={SLIPPAGE_CHOICES.map((s) => ({ value: s, label: `${(s / 100).toFixed(2)}%` }))}
+          />
+        </div>
+        {error && <ErrorNote onRetry={run}>{error}</ErrorNote>}
+      </Card>
+
+      {loading && !data && (
+        <Card title="Measuring">
+          <Loading rows={3} />
+        </Card>
+      )}
 
       {data && (
         <>
-          {/* ── 1. MEV exposure ────────────────────────────────────── */}
-          <section className="section">
-            <div className="section-head">
-              <h2 className="sec-label">1 · Sandwich exposure</h2>
-              <span className="section-meta">
-                block {data.blockNumber} · {data.latencyMs} ms
-              </span>
-            </div>
+          {/* 1 — the headline */}
+          <Card
+            title="What your slippage is worth to an attacker"
+            step={1}
+            tone="warn"
+            meta={<span className="mono">block {data.blockNumber}</span>}
+          >
+            <Answers>
+              <Answer
+                label={`At ${data.exposure.slippageBps} bp`}
+                value={num(data.exposure.exposure, data.tokenOut.decimals)}
+                unit={data.tokenOut.symbol}
+                tone="bad"
+                size="xl"
+                note="most a sandwich can take"
+              />
+              <Answer
+                label={`At ${data.exposure.atRecommended.slippageBps} bp`}
+                value={num(data.exposure.atRecommended.exposure, data.tokenOut.decimals)}
+                unit={data.tokenOut.symbol}
+                tone="good"
+                note="same trade, tighter floor"
+              />
+              <Answer
+                label="You'd save"
+                value={num(data.exposure.savedByTightening, data.tokenOut.decimals)}
+                unit={data.tokenOut.symbol}
+                note="by tightening alone"
+              />
+            </Answers>
 
-            <div className="stat-row">
-              <div className="kpi">
-                <div className="sec-label">At your {data.exposure.slippageBps} bp</div>
-                <div className="kv dn">
-                  {dec(data.exposure.exposure, data.tokenOut.decimals).toLocaleString('en-US', {
-                    maximumFractionDigits: 4,
-                  })}
-                  <span className="dec"> {data.tokenOut.symbol}</span>
-                </div>
-                <div className="ksub">most a sandwich can take</div>
-              </div>
-              <div className="kpi">
-                <div className="sec-label">
-                  At the recommended {data.exposure.atRecommended.slippageBps} bp
-                </div>
-                <div className="kv up">
-                  {dec(
-                    data.exposure.atRecommended.exposure,
-                    data.tokenOut.decimals,
-                  ).toLocaleString('en-US', { maximumFractionDigits: 4 })}
-                  <span className="dec"> {data.tokenOut.symbol}</span>
-                </div>
-                <div className="ksub">same trade, tighter floor</div>
-              </div>
-              <div className="kpi">
-                <div className="sec-label">Taken off the table</div>
-                <div className="kv">
-                  {dec(data.exposure.savedByTightening, data.tokenOut.decimals).toLocaleString(
-                    'en-US',
-                    { maximumFractionDigits: 4 },
-                  )}
-                  <span className="dec"> {data.tokenOut.symbol}</span>
-                </div>
-                <div className="ksub">by tightening alone</div>
-              </div>
-            </div>
+            <Reveal summary="How is this exact rather than estimated?">
+              <p>
+                A sandwicher pushes the pool until you receive exactly your minimum, then sells
+                back. Their profit is bounded by the gap between what the pool would have paid and
+                what you agreed to accept — so the exposure is simply quoted minus floor. It is
+                arithmetic on a number you authorised, not a model of anyone&rsquo;s behaviour.
+              </p>
+            </Reveal>
+          </Card>
 
-            <p className="mt-3" style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-              A slippage tolerance is not a safety margin — it is a standing offer. An attacker can
-              push the pool until you receive exactly your minimum and keep the difference, so the
-              gap between the quote and your floor is the maximum they can extract. This figure is
-              arithmetic on numbers you authorised, not an estimate.
-            </p>
-          </section>
-
-          {/* ── 2. Measured drift ──────────────────────────────────── */}
-          <section className="section">
-            <div className="section-head">
-              <h2 className="sec-label">2 · Slippage, measured rather than guessed</h2>
-              <span className="section-meta">
-                <span
-                  className={`badge ${
-                    data.recommendation.confidence === 'high'
-                      ? 'b-pass'
-                      : data.recommendation.confidence === 'medium'
-                        ? 'b-chop'
-                        : 'b-mut'
-                  }`}
-                >
-                  {data.recommendation.confidence} confidence
-                </span>
-              </span>
-            </div>
-
+          {/* 2 — measured slippage */}
+          <Card
+            title="The slippage this pair actually needs"
+            step={2}
+            meta={
+              <Chip
+                tone={
+                  data.recommendation.confidence === 'high'
+                    ? 'good'
+                    : data.recommendation.confidence === 'medium'
+                      ? 'warn'
+                      : 'mut'
+                }
+              >
+                {data.recommendation.confidence} confidence
+              </Chip>
+            }
+          >
             {data.drift ? (
               <>
-                <div className="stat-row">
-                  <div className="kpi">
-                    <div className="sec-label">Recommended</div>
-                    <div className="kv">
-                      {data.recommendation.recommendedBps}
-                      <span className="dec"> bp</span>
-                    </div>
-                    <div className="ksub">
-                      vs. the 50 bp every wallet ships
-                      {data.recommendation.savedVsDefaultBps > 0 &&
-                        ` — ${data.recommendation.savedVsDefaultBps} bp tighter`}
-                    </div>
-                  </div>
-                  <div className="kpi">
-                    <div className="sec-label">Drift p95</div>
-                    <div className="kv">
-                      {data.drift.p95.toFixed(2)}
-                      <span className="dec"> bp</span>
-                    </div>
-                    <div className="ksub">
-                      over {data.drift.inclusionBlocks}-block windows
-                    </div>
-                  </div>
-                  <div className="kpi">
-                    <div className="sec-label">Evidence</div>
-                    <div className="kv">{data.drift.observations}</div>
-                    <div className="ksub">
-                      windows over {data.drift.lookbackBlocks} blocks
-                      {data.drift.legs === 2 && ', both legs'}
-                    </div>
-                  </div>
-                  <div className="kpi">
-                    <div className="sec-label">Worst seen</div>
-                    <div className="kv">
-                      {data.drift.max.toFixed(2)}
-                      <span className="dec"> bp</span>
-                    </div>
-                    <div className="ksub">p50 {data.drift.p50.toFixed(2)} · p99 {data.drift.p99.toFixed(2)}</div>
-                  </div>
-                </div>
-                <p className="mt-3" style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-                  {data.recommendation.reason}. Measured from{' '}
-                  <a href={`${EXPLORER}/address/${data.drift.pool}`} target="_blank" rel="noreferrer" className="mono">
-                    {addr(data.drift.pool)}
-                  </a>{' '}
-                  — Uniswap V3 Swap events carry the pool price, so one log query reconstructs the
-                  whole series without an archive node or a price feed.
-                </p>
+                <Answers>
+                  <Answer
+                    label="Recommended"
+                    value={data.recommendation.recommendedBps}
+                    unit="bp"
+                    size="xl"
+                    tone="good"
+                    note={
+                      data.recommendation.savedVsDefaultBps > 0
+                        ? `${data.recommendation.savedVsDefaultBps} bp tighter than the 50 bp wallets ship`
+                        : 'the safe default stands'
+                    }
+                  />
+                  <Answer
+                    label="Price moved (p95)"
+                    value={data.drift.p95.toFixed(2)}
+                    unit="bp"
+                    note={`over ${data.drift.inclusionBlocks}-block windows`}
+                  />
+                  <Answer
+                    label="Evidence"
+                    value={data.drift.observations}
+                    note={`windows over ${data.drift.lookbackBlocks} blocks${data.drift.legs === 2 ? ', both legs' : ''}`}
+                  />
+                </Answers>
+
+                <Reveal summary="Where does this number come from?">
+                  <p>{data.recommendation.reason}.</p>
+                  <p>
+                    Measured from{' '}
+                    <a href={`${EXPLORER}/address/${data.drift.pool}`} target="_blank" rel="noreferrer" className="mono">
+                      {addr(data.drift.pool)}
+                    </a>
+                    . Uniswap V3 Swap events carry the pool price, so a single log query
+                    reconstructs the whole series — no archive node, no per-block calls, no price
+                    feed.
+                  </p>
+                  <p>
+                    Below fifty observations the recommendation refuses to tighten below the
+                    default at all. A tool that exists to reduce risk must not increase it on the
+                    pairs it understands least.
+                  </p>
+                </Reveal>
               </>
             ) : (
-              <div className="empty">
-                Not enough recent trades on this pair to measure drift, so the conservative default
-                stands. An unmeasured pair is exactly where a confident number would do most harm.
-              </div>
+              <Empty>
+                Not enough recent trades to measure this pair, so the conservative 50 bp default
+                stands.
+              </Empty>
             )}
-          </section>
+          </Card>
 
-          <div className="row row-2">
-            {/* ── 3. Capacity ─────────────────────────────────────── */}
-            <section className="section">
-              <div className="section-head">
-                <h2 className="sec-label">3 · Capacity</h2>
-                <span className="section-meta">{data.capacity[0]?.venue}</span>
-              </div>
-              <div className="scroll-x">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Impact budget</th>
-                      <th className="num">Max size</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.capacity.map((c) => (
-                      <tr key={c.maxImpactBps}>
-                        <td className="mono">≤ {c.maxImpactBps} bp</td>
-                        <td className="num mono">
-                          {c.atLeast && <span className="mut">≥ </span>}
-                          {sig(BigInt(c.size), tokenIn, 6)} {data.tokenIn.symbol}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="mt-3" style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-                How much this pair absorbs before impact exceeds a budget — the first question a
-                desk asks and the one no interface answers. A ≥ means the whole quoted range fits,
-                so the true figure is higher.
-              </p>
-            </section>
+          <div className="c-two">
+            {/* 3 — capacity */}
+            <Card title="How much it can absorb" step={3}>
+              <Answer
+                label={`≤ ${data.capacity[0]?.maxImpactBps} bp impact`}
+                value={
+                  <>
+                    {data.capacity[0]?.atLeast && <span className="c-t-mut">≥ </span>}
+                    {sig(BigInt(data.capacity[0]?.size ?? '0'), tokenIn, 5)}
+                  </>
+                }
+                unit={data.tokenIn.symbol}
+                note={data.capacity[0]?.venue}
+              />
+              <ul className="c-list" style={{ marginTop: 14 }}>
+                {data.capacity.slice(1).map((c) => (
+                  <li key={c.maxImpactBps}>
+                    <span>≤ {c.maxImpactBps} bp</span>
+                    <span className="mono">
+                      {c.atLeast && '≥ '}
+                      {sig(BigInt(c.size), tokenIn, 5)} {data.tokenIn.symbol}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <Reveal summary="Why does this matter?">
+                <p>
+                  It is the first question a desk asks and no interface answers it. A “≥” means the
+                  whole quoted range stayed within budget, so the true figure is higher.
+                </p>
+              </Reveal>
+            </Card>
 
-            {/* ── 4. Fragmentation ────────────────────────────────── */}
-            <section className="section">
-              <div className="section-head">
-                <h2 className="sec-label">4 · Fragmentation</h2>
-              </div>
-              <div className="stat-row">
-                <div className="kpi">
-                  <div className="sec-label">Off the best venue</div>
-                  <div className="kv">
-                    {data.fragmentation.percent.toFixed(1)}
-                    <span className="dec">%</span>
-                  </div>
-                  <div className="ksub">
-                    of optimal execution, across {data.fragmentation.venuesInSplit} of{' '}
-                    {data.fragmentation.venuesQuoted} venues
-                  </div>
-                </div>
-              </div>
-              <p className="mt-3" style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-                Zero means one pool is the whole market and a router earns nothing here. It is
-                published precisely because it is sometimes unflattering: on deep pairs at small
-                size, this number says routing does not matter.
-              </p>
-            </section>
+            {/* 4 — fragmentation */}
+            <Card title="Does routing even matter here?" step={4}>
+              <Answer
+                label="Off the best venue"
+                value={data.fragmentation.percent.toFixed(1)}
+                unit="%"
+                tone={data.fragmentation.percent > 5 ? 'good' : 'mut'}
+                note={
+                  data.fragmentation.percent < 1
+                    ? 'one pool is effectively the whole market'
+                    : `spread across ${data.fragmentation.venuesInSplit} of ${data.fragmentation.venuesQuoted} venues`
+                }
+              />
+              <Reveal summary="Why publish an unflattering number?">
+                <p>
+                  Zero means a router earns nothing on this pair. Saying so is the point — a tool
+                  that only ever reports its own usefulness is not measuring anything.
+                </p>
+              </Reveal>
+            </Card>
           </div>
 
-          {/* ── 5. Arbitrage ───────────────────────────────────────── */}
-          <section className="section">
-            <div className="section-head">
-              <h2 className="sec-label">5 · Cross-venue round trip</h2>
-              <span className="section-meta">
-                {data.arb?.profitable ? (
-                  <span className="badge b-pass">opportunity</span>
-                ) : (
-                  <span className="badge b-mut">none profitable</span>
-                )}
-              </span>
-            </div>
-
+          {/* 5 — two-venue round trip */}
+          <Card
+            title="Two-venue round trip"
+            step={5}
+            meta={
+              data.arb?.profitable ? <Chip tone="good">open</Chip> : <Chip tone="mut">none</Chip>
+            }
+          >
             {data.arb ? (
-              <>
-                <div className="route-row">
-                  <span>
-                    Buy on <strong>{data.arb.buy.venue}</strong>, sell on{' '}
-                    <strong>{data.arb.sell.venue}</strong>
-                  </span>
-                  <span className="mono">
-                    {sig(BigInt(data.arb.size), tokenIn, 5)} {data.tokenIn.symbol}
-                  </span>
-                </div>
-                <div className="route-row">
-                  <span className="mut">Gross / net of gas</span>
-                  <span className="mono">
-                    <span className={data.arb.grossBps > 0 ? 'up' : 'dn'}>{bps(data.arb.grossBps)}</span>
-                    {' · '}
-                    <span className={data.arb.netBps > 0 ? 'up' : 'dn'}>{bps(data.arb.netBps)}</span>
-                  </span>
-                </div>
-              </>
+              <Answers>
+                <Answer
+                  label="Best round trip"
+                  value={bps(data.arb.netBps)}
+                  tone={data.arb.netBps > 0 ? 'good' : 'mut'}
+                  note={`${data.arb.buy.venue} → ${data.arb.sell.venue}, net of gas`}
+                />
+                <Answer
+                  label="At size"
+                  value={sig(BigInt(data.arb.size), tokenIn, 4)}
+                  unit={data.tokenIn.symbol}
+                  note={`${bps(data.arb.grossBps)} before gas`}
+                />
+              </Answers>
             ) : (
-              <div className="empty">No profitable round trip at any size on this pair.</div>
+              <Empty>No profitable round trip at any size on this pair.</Empty>
             )}
-
-            <p className="mt-3" style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.55 }}>
-              Both legs move against you as size grows, so profit is concave and the optimum is a
-              specific size rather than &ldquo;as much as possible&rdquo; — taking the maximum is how a
-              naive searcher turns an edge into a loss. Expect this to read <em>none</em> almost
-              always: these opportunities are contested by searchers with far better latency and
-              close within a block. Reporting nothing is the honest answer, not a broken feature.
-            </p>
-          </section>
+            <Reveal summary="Why is the size not simply as large as possible?">
+              <p>
+                Both legs move against you as size grows, so profit is concave — it rises, peaks,
+                and falls back through zero. Taking the maximum is how a naive searcher turns a
+                real edge into a loss.
+              </p>
+              <p>
+                Expect this to read <em>none</em> almost always. These are contested by searchers
+                with far better latency and close within a block.
+              </p>
+            </Reveal>
+          </Card>
         </>
       )}
+
+      {/* 6 — the arbitrage loop finder, independent of the pair above */}
+      <CycleRoute />
     </>
   );
 }

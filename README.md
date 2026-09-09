@@ -169,6 +169,31 @@ What it cannot correct for: *why* they routed as they did. A trade that looks
 beatable may have been a deliberate venue choice, an MEV-protected order, or one
 leg of an intent that settled elsewhere. The page says so.
 
+## Interface
+
+The frontend is built for someone who cannot easily hold five threads at once —
+which, on a screen that spends money, is everyone under pressure.
+
+The first version put its reasoning in front of its answers: five equal
+sections, each opening with a paragraph about its own methodology, and the
+number the reader wanted somewhere in the middle. Good research document, bad
+instrument. The rules now:
+
+- **The answer is the largest thing on screen.** Every card leads with its
+  figure; every explanation is a closed `<details>` one tap away. Nothing was
+  deleted — the rigour is the point — it is just no longer in the way.
+- **Nothing sits between the number and the button.** The trade page is a
+  numbered sequence: what you pay, what you get, the one risk worth acting on,
+  then a single full-width action. Everything else lives below a visible break
+  and can be hidden entirely with one toggle that persists.
+- **Nothing moves unless movement is the information.** The live block counter
+  is gone from the masthead; the price tape only emits when the price actually
+  changed; `prefers-reduced-motion` removes the rest.
+- **Nothing arrives and shoves the page down.** Loading states reserve their
+  height.
+- **Every tappable thing is at least 40px**, there is a skip link, the current
+  page is filled rather than underlined, and colour never carries meaning alone.
+
 ## Execution tools
 
 Five things a swap interface could tell you and none of them do. All of it falls
@@ -221,7 +246,20 @@ single best venue. Published precisely because it is sometimes unflattering — 
 a deep pair at small size this number says routing does not matter, and that is
 worth knowing.
 
-**5 · Cross-venue round trip.** Both legs move against you as size grows, so
+**5 · Arbitrage loops.** A loop is profitable when its exchange rates multiply
+to more than one. Take logarithms and that product becomes a sum; negate it and
+the profitable case becomes a *negative cycle*, which Bellman-Ford finds. The
+transformation is the whole trick — a multiplicative search over paths becomes
+an additive one, and an additive one has a textbook algorithm. Gas is folded
+into each edge rather than subtracted at the end, so the search prefers a
+shorter loop on its own.
+
+It draws the loop as a loop, and it ranks the near misses, because those are the
+interesting part: how far the market is from opening. Expect nothing to be open
+— these are contested by searchers with colocated infrastructure and close
+inside a block. Finding none is the honest result of a correct search.
+
+**6 · Cross-venue round trip.** Both legs move against you as size grows, so
 profit is concave and the optimum is a *specific size* rather than as much as
 possible — taking the maximum is how a naive searcher turns an edge into a loss.
 It will almost always report nothing: these are contested by searchers with far
@@ -475,7 +513,10 @@ src/lib/arb.ts          round-trip search, capacity, fragmentation
 src/lib/backtest.ts     log decoding, trade replay, summary statistics
 src/lib/dataset.ts      reads the committed backtest dataset
 src/lib/log.ts          structured logging and in-process metrics
-src/app/api/            quote, analyze, venues, stream (SSE), health, metrics, openapi
+src/lib/cycle.ts        Bellman-Ford negative-cycle search over the rate graph
+src/components/ui.tsx   the interface vocabulary: cards, answers, disclosure
+src/app/focus.css       the attention layer
+src/app/api/            quote, analyze, cycles, venues, stream (SSE), health, metrics, openapi
 data/backtest.jsonl     append-only dataset, written by the scheduled worker
 contracts/src           SplitRouter.sol — written, tested, not deployed
 contracts/test          prediction-vs-fill, split router, gas profile

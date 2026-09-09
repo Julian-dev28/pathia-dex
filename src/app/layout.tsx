@@ -4,6 +4,7 @@ import { Masthead } from '@/components/Masthead';
 import { ThemeScript } from '@/components/ThemeToggle';
 import './pathia.css';
 import './router.css';
+import './focus.css';
 
 const DESCRIPTION =
   'Quotes every major Base venue directly from pool state, solves the optimal split across them, and executes through the venues own audited routers. No aggregator API, no keys.';
@@ -49,9 +50,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeScript />
       </head>
       <body>
+        <a className="c-skip" href="#main">
+          Skip to content
+        </a>
         <Providers>
           <Masthead />
-          <div className="shell">{children}</div>
+          <main className="c-shell c-wide" id="main">{children}</main>
           <footer className="site-foot">
             <div className="site-foot-inner">
               <span>

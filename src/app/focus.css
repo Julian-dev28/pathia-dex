@@ -1,0 +1,494 @@
+/* ============================================================================
+   pathia dex — the attention layer
+   ----------------------------------------------------------------------------
+   Built on pathia's tokens; none of its colours are redefined here.
+
+   The design problem this solves is not aesthetic. The previous interface put
+   its reasoning in front of its answers — five equal sections, each opening
+   with a paragraph about its own methodology — which asks the reader to hold
+   several threads at once and read prose to discover which one matters. For a
+   reader who cannot easily do that, the page is unusable; for everyone else it
+   is merely slow.
+
+   So the rules here are:
+
+     One thing is clearly the largest on any screen.
+     Prose is closed by default and one tap away.
+     Nothing moves unless movement is the information.
+     Nothing arrives and shoves the page down.
+     Every tappable thing is at least 40px.
+   ========================================================================= */
+
+/* ── page header ──────────────────────────────────────────────────────── */
+
+.c-pagehead { margin: 4px 0 22px; }
+.c-pagetitle {
+  font-size: 26px; font-weight: 600; letter-spacing: -0.022em;
+  margin: 0 0 5px;
+}
+/* One sentence, hard capped. The old three-line descriptions pushed the
+   controls below the fold on a laptop and were read by nobody. */
+.c-lede {
+  font-size: 14px; line-height: 1.5; color: var(--ink-2);
+  margin: 0; max-width: 62ch;
+}
+
+/* ── card ─────────────────────────────────────────────────────────────── */
+
+.c-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.c-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface-2);
+}
+.c-title {
+  font-size: 13px; font-weight: 600; letter-spacing: 0.01em;
+  margin: 0; color: var(--ink);
+}
+.c-meta { margin-left: auto; font-size: 12px; color: var(--ink-3); }
+.c-body { padding: 16px; }
+
+/* A numbered chip turns a page into a sequence. Someone who loses their place
+   can find it again by number rather than by re-reading headings. */
+.c-step {
+  display: grid; place-items: center;
+  width: 20px; height: 20px; flex: none;
+  font-size: 11px; font-weight: 700;
+  color: var(--paper); background: var(--ink-2);
+  border-radius: 50%;
+}
+.c-good .c-head { background: var(--up-wash); border-bottom-color: transparent; }
+.c-good .c-step { background: var(--up); }
+.c-warn .c-head { background: var(--amber-wash); border-bottom-color: transparent; }
+.c-warn .c-step { background: var(--amber); }
+.c-bad  .c-head { background: var(--down-wash); border-bottom-color: transparent; }
+.c-bad  .c-step { background: var(--down); }
+
+/* ── the answer ───────────────────────────────────────────────────────── */
+
+.c-answers {
+  display: grid; gap: 18px 26px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.c-answer { min-width: 0; }
+.c-answer-label {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3);
+  margin-bottom: 5px;
+}
+.c-answer-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em; line-height: 1.05;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.c-xl { font-size: 40px; font-weight: 450; }
+.c-lg { font-size: 27px; font-weight: 450; }
+.c-sm { font-size: 18px; font-weight: 500; }
+/* Units are not the information. They ride small so the eye lands on the
+   magnitude, which is the convention that separates a finance screen from a
+   dashboard. */
+.c-answer-unit { font-size: 0.5em; color: var(--ink-3); margin-left: 0.25em; font-weight: 500; }
+.c-answer-note { font-size: 12px; color: var(--ink-3); margin-top: 6px; line-height: 1.45; }
+
+.c-t-good { color: var(--up); }
+.c-t-warn { color: var(--amber); }
+.c-t-bad  { color: var(--down); }
+.c-t-mut  { color: var(--ink-3); }
+
+/* ── progressive disclosure ───────────────────────────────────────────── */
+
+.c-reveal { margin-top: 14px; border-top: 1px solid var(--rule); }
+.c-reveal summary {
+  display: flex; align-items: center; gap: 8px;
+  /* 40px of height: a target you can hit without aiming. */
+  padding: 11px 0; min-height: 40px;
+  font-size: 12.5px; color: var(--ink-3);
+  cursor: pointer; list-style: none; user-select: none;
+}
+.c-reveal summary::-webkit-details-marker { display: none; }
+.c-reveal summary:hover { color: var(--ink); }
+.c-reveal-mark {
+  width: 7px; height: 7px; flex: none;
+  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg) translate(-1px, -1px);
+  transition: transform 0.12s ease;
+}
+.c-reveal[open] .c-reveal-mark { transform: rotate(45deg); }
+.c-reveal-body {
+  padding: 0 0 14px;
+  font-size: 13px; line-height: 1.6; color: var(--ink-2);
+  max-width: 74ch;
+}
+.c-reveal-body p { margin: 0 0 10px; }
+.c-reveal-body p:last-child { margin-bottom: 0; }
+.c-reveal-body code { font-family: var(--mono); font-size: 0.92em; }
+
+/* ── chips and suggestions ────────────────────────────────────────────── */
+
+.c-chip {
+  display: inline-block; padding: 2px 8px;
+  font-size: 11px; font-weight: 500; border-radius: 3px; white-space: nowrap;
+}
+.c-chip-mut    { color: var(--ink-2); background: var(--surface-2); }
+.c-chip-good   { color: var(--up); background: var(--up-wash); }
+.c-chip-warn   { color: var(--amber); background: var(--amber-wash); }
+.c-chip-bad    { color: var(--down); background: var(--down-wash); }
+.c-chip-accent { color: var(--accent-ink); background: var(--accent-wash); }
+
+.c-suggest {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 11px 13px; margin-top: 12px;
+  font-size: 13px; line-height: 1.45; border-radius: 5px;
+}
+.c-suggest span { flex: 1; min-width: 200px; }
+.c-suggest-accent { color: var(--accent-ink); background: var(--accent-wash); }
+.c-suggest-warn { color: var(--amber); background: var(--amber-wash); }
+.c-suggest-btn {
+  padding: 7px 13px; min-height: 34px;
+  font-size: 12.5px; font-weight: 600; white-space: nowrap;
+  color: inherit; background: transparent;
+  border: 1px solid currentColor; border-radius: 4px; cursor: pointer;
+}
+.c-suggest-btn:hover { background: color-mix(in srgb, currentColor 14%, transparent); }
+
+/* ── quiet states ─────────────────────────────────────────────────────── */
+
+.c-empty { margin: 0; padding: 8px 0; font-size: 13px; color: var(--ink-3); }
+.c-error {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 11px 13px; border-radius: 5px;
+  font-size: 13px; color: var(--down); background: var(--down-wash);
+}
+.c-error span { flex: 1; min-width: 200px; }
+
+/* Reserved height, so arriving content never shoves the page down. */
+.c-loading { display: grid; gap: 9px; }
+.c-skel {
+  height: 17px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--rule) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: c-shimmer 1.4s linear infinite;
+}
+.c-skel:nth-child(2) { width: 62%; }
+.c-skel:nth-child(3) { width: 78%; }
+@keyframes c-shimmer { to { background-position: -200% 0; } }
+
+.c-sr {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ── segmented control ────────────────────────────────────────────────── */
+
+.c-seg { display: inline-flex; border: 1px solid var(--rule-2); border-radius: 5px; overflow: hidden; }
+.c-seg-btn {
+  padding: 8px 13px; min-height: 38px;
+  font-size: 12.5px; font-weight: 500;
+  color: var(--ink-2); background: var(--surface);
+  border: 0; border-right: 1px solid var(--rule-2); cursor: pointer;
+}
+.c-seg-btn:last-child { border-right: 0; }
+.c-seg-btn:hover { background: var(--surface-2); color: var(--ink); }
+.c-seg-btn.on { background: var(--accent-wash); color: var(--accent-ink); font-weight: 600; }
+
+/* ── layout ───────────────────────────────────────────────────────────── */
+
+/* Deliberately narrower than the old 1220px. A trade is one decision and does
+   not want a second column of things to check. */
+.c-shell { max-width: 780px; margin: 0 auto; padding: 0 20px 100px; }
+.c-wide { max-width: 1080px; }
+.c-two { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 760px) { .c-two { grid-template-columns: 1fr; } }
+
+/* ── accessibility and motion ─────────────────────────────────────────── */
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+/* Motion here is decoration, never information, so it all goes. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .c-skel { background: var(--surface-2); }
+}
+
+/* ── masthead ─────────────────────────────────────────────────────────── */
+
+.c-skip {
+  position: absolute; left: -9999px;
+  padding: 10px 14px; background: var(--accent); color: var(--paper);
+  border-radius: 0 0 4px 0; z-index: 100;
+}
+.c-skip:focus { left: 0; top: 0; }
+
+.c-bar {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--bar);
+  border-bottom: 1px solid var(--rule);
+}
+.c-bar-in {
+  max-width: 1080px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 20px; min-height: 54px;
+}
+.c-brand {
+  font-size: 14px; font-weight: 600; letter-spacing: 0.16em;
+  text-transform: lowercase; color: var(--bar-ink); white-space: nowrap;
+}
+.c-brand:hover { text-decoration: none; }
+
+.c-nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.c-nav::-webkit-scrollbar { display: none; }
+.c-nav-link {
+  display: flex; align-items: center;
+  padding: 8px 11px; min-height: 40px;
+  font-size: 13px; color: var(--bar-ink-2);
+  border-radius: 5px; white-space: nowrap;
+}
+.c-nav-link:hover { color: var(--bar-ink); background: rgba(255, 255, 255, 0.06); text-decoration: none; }
+/* The current page is filled, not underlined. At a glance, "where am I" should
+   not require comparing the weight of six labels. */
+.c-nav-link.on { color: var(--bar-ink); background: rgba(255, 255, 255, 0.12); font-weight: 600; }
+
+.c-bar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.c-wallet {
+  padding: 8px 13px; min-height: 38px;
+  font-size: 12.5px; font-weight: 500;
+  color: var(--bar-ink); background: rgba(255, 255, 255, 0.1);
+  border: 0; border-radius: 5px; cursor: pointer;
+}
+.c-wallet:hover { background: rgba(255, 255, 255, 0.18); }
+.c-wallet:disabled { opacity: 0.5; cursor: default; }
+.c-wallet.warn { background: var(--amber); color: #14100a; font-weight: 600; }
+
+@media (max-width: 620px) {
+  .c-bar-in { gap: 12px; padding: 0 14px; }
+  .c-brand { font-size: 13px; letter-spacing: 0.1em; }
+  .c-nav-link { padding: 8px; font-size: 12.5px; }
+}
+
+/* ── trade page ───────────────────────────────────────────────────────── */
+
+.c-tradehead {
+  display: flex; align-items: baseline; gap: 12px;
+  margin: 6px 0 18px;
+}
+.c-tradehead .c-pagetitle { margin: 0; }
+
+.c-ghost {
+  padding: 7px 10px; min-height: 36px;
+  font-size: 12.5px; font-weight: 500;
+  color: var(--ink-3); background: transparent;
+  border: 0; border-radius: 4px; cursor: pointer;
+}
+.c-ghost:hover { color: var(--ink); background: var(--surface-2); }
+.c-tradehead .c-ghost { margin-left: auto; }
+
+/* The amount field is the input *and* the headline figure, so it is set at
+   figure size. Anything smaller invites a typo nobody notices. */
+.c-field {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+.c-field:focus-within { border-color: var(--accent); }
+.c-amount {
+  flex: 1; min-width: 0;
+  border: 0; background: transparent; outline: none;
+  color: var(--ink);
+  font-family: var(--sans); font-size: 30px; font-weight: 450;
+  letter-spacing: -0.025em; font-variant-numeric: tabular-nums;
+}
+.c-amount::placeholder { color: var(--ink-3); }
+/* Spinners turn a price field into a quantity picker, and scroll-to-change is
+   a genuine hazard on a form that spends money. */
+.c-amount::-webkit-outer-spin-button,
+.c-amount::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.c-field-foot {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 8px; padding: 0 2px;
+  font-size: 12.5px; color: var(--ink-3);
+}
+.c-field-foot > span { margin-right: auto; }
+
+.c-guarantee {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-top: 16px; padding-top: 13px;
+  border-top: 1px solid var(--rule);
+  font-size: 13px; color: var(--ink-2);
+}
+.c-guarantee span { flex: 1; min-width: 200px; }
+
+.c-ack {
+  display: flex; align-items: flex-start; gap: 11px;
+  margin-top: 12px; padding: 12px 13px;
+  font-size: 13px; line-height: 1.5;
+  color: var(--amber); background: var(--amber-wash);
+  border-radius: 5px; cursor: pointer;
+}
+.c-ack.severe { color: var(--down); background: var(--down-wash); }
+.c-ack input { margin-top: 2px; width: 17px; height: 17px; flex: none; accent-color: currentColor; }
+
+/* ── the primary action ───────────────────────────────────────────────── */
+
+/* One button, full width, unmissable, and nothing between it and the number it
+   acts on. Sticky at the bottom on a phone so it never scrolls away mid-decision. */
+.c-go {
+  display: block; width: 100%;
+  padding: 16px; margin: 4px 0 14px;
+  font-size: 15px; font-weight: 600; letter-spacing: 0.01em;
+  color: var(--paper); background: var(--accent);
+  border: 0; border-radius: 6px; cursor: pointer;
+}
+.c-go:hover:not(:disabled) { background: var(--accent-ink); }
+.c-go:disabled { opacity: 0.42; cursor: default; }
+
+@media (max-width: 620px) {
+  .c-go {
+    position: sticky; bottom: 12px;
+    box-shadow: 0 4px 18px color-mix(in srgb, var(--paper) 70%, transparent);
+  }
+}
+
+.c-tx {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 11px 13px; margin-bottom: 14px;
+  font-size: 13px; border-radius: 5px;
+  color: var(--ink-2); background: var(--surface-2);
+}
+.c-tx.ok { color: var(--up); background: var(--up-wash); }
+
+.c-foot-note {
+  margin: 26px 0 0;
+  font-size: 12px; line-height: 1.5; color: var(--ink-3);
+}
+
+/* ── secondary panels ─────────────────────────────────────────────────── */
+
+/* A visible break, so "the trade" and "things about the trade" are obviously
+   different regions and the second can be ignored. */
+.c-secondary { margin-top: 26px; padding-top: 8px; border-top: 2px solid var(--rule); }
+
+.c-alloc { display: flex; height: 10px; border-radius: 2px; overflow: hidden; background: var(--surface-2); }
+.c-alloc-seg { height: 100%; min-width: 2px; }
+.c-alloc-seg + .c-alloc-seg { border-left: 1px solid var(--surface); }
+
+.c-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.c-list li {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 0; font-size: 13px;
+  border-bottom: 1px solid var(--rule);
+}
+.c-list li:last-child { border-bottom: 0; }
+.c-list li .mono { margin-left: auto; color: var(--ink-2); }
+
+.c-scroll { overflow-x: auto; }
+.c-table { width: 100%; border-collapse: collapse; }
+.c-table th {
+  padding: 0 14px 9px 0;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--ink-3); text-align: left;
+  border-bottom: 1px solid var(--rule-2); white-space: nowrap;
+}
+.c-table td {
+  padding: 10px 14px 10px 0; font-size: 13px;
+  border-bottom: 1px solid var(--rule); vertical-align: top;
+}
+.c-table tr:last-child td { border-bottom: 0; }
+.c-table .num { text-align: right; }
+
+/* ── shared controls ──────────────────────────────────────────────────── */
+
+.c-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.c-ctl-label {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.c-input {
+  width: 110px; padding: 9px 11px; min-height: 40px;
+  font-size: 14px; font-variant-numeric: tabular-nums;
+  color: var(--ink); background: var(--surface-2);
+  border: 1px solid var(--rule-2); border-radius: 5px; outline: none;
+}
+.c-input:focus { border-color: var(--accent); }
+.c-arrow { color: var(--ink-3); }
+
+/* ── the arbitrage loop ───────────────────────────────────────────────── */
+
+/* Drawn as an actual loop. A table of legs carries the same information and
+   reads as homework; the cycle shape is the thing being described, so the
+   reader understands it without parsing anything. */
+.c-cycle {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 4px 0; margin-top: 18px; padding: 16px 14px;
+  background: var(--surface-2); border-radius: 6px;
+}
+.c-cycle-node-wrap { display: inline-flex; align-items: center; }
+.c-cycle-node {
+  padding: 7px 12px;
+  font-size: 13px; font-weight: 600; white-space: nowrap;
+  color: var(--ink); background: var(--surface);
+  border: 1px solid var(--rule-2); border-radius: 5px;
+}
+/* The loop closes where it opened, so both ends are marked the same. */
+.c-cycle-node.start {
+  color: var(--accent-ink);
+  background: var(--accent-wash);
+  border-color: transparent;
+}
+.c-cycle-edge {
+  display: inline-flex; flex-direction: column; align-items: center;
+  gap: 2px; padding: 0 8px;
+}
+.c-cycle-arrow {
+  width: 22px; height: 1px; background: var(--rule-2); position: relative;
+}
+.c-cycle-arrow::after {
+  content: ''; position: absolute; right: 0; top: -2.5px;
+  border-left: 5px solid var(--rule-2);
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+.c-cycle-venue {
+  font-size: 9.5px; color: var(--ink-3); white-space: nowrap;
+  max-width: 84px; overflow: hidden; text-overflow: ellipsis;
+}
+
+@media (max-width: 560px) {
+  .c-cycle { flex-direction: column; align-items: flex-start; }
+  .c-cycle-node-wrap { flex-direction: column; align-items: flex-start; }
+  .c-cycle-edge { flex-direction: row; padding: 4px 0 4px 14px; }
+  .c-cycle-arrow { transform: rotate(90deg); width: 14px; }
+}
+
+.c-legend {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  margin-top: 12px; font-size: 12px; color: var(--ink-2);
+}
+.c-legend .leg-dot {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 2px; margin-right: 6px;
+}
+
+.c-sub { margin-top: 3px; font-size: 11.5px; color: var(--ink-3); }
+
+.c-tick {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 7px 0; font-size: 13px;
+  border-bottom: 1px solid var(--rule);
+}
+.c-tick:last-child { border-bottom: 0; }
+.c-tick-dir { width: 12px; text-align: center; }
+.c-tick .mut { margin-left: auto; font-size: 12px; }

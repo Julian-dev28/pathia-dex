@@ -6,10 +6,17 @@ import { fetchQuote, type QuoteResponse } from '@/lib/api';
 import { sig, bps } from '@/lib/format';
 import { DepthChart } from './DepthChart';
 import { TokenSelect } from './TokenSelect';
+import { Card, Answer, Answers, Reveal, Empty, ErrorNote, Loading, PageHead, Segmented } from './ui';
 
 const SIZES = ['0.1', '1', '10', '50'];
 const SERIES_CLASS = ['vc-0', 'vc-1', 'vc-2', 'vc-3', 'vc-4'];
 
+/**
+ * Depth.
+ *
+ * One question — what does size cost here — answered by one chart, with the
+ * per-venue detail underneath it rather than beside it.
+ */
 export function DepthView() {
   const [inSym, setInSym] = useState('WETH');
   const [outSym, setOutSym] = useState('USDC');
@@ -33,11 +40,7 @@ export function DepthView() {
     };
   }, [inSym, outSym, amount]);
 
-  /**
-   * Price impact at the top rung against the smallest rung, per venue. This is
-   * the number a desk actually asks for — "what does it cost me to do size
-   * here" — and it is the same data the chart draws, stated once in figures.
-   */
+  /** Price impact at full size against the smallest rung, per venue. */
   const impact = useMemo(() => {
     if (!quote) return [];
     return quote.venues
@@ -58,44 +61,70 @@ export function DepthView() {
       .sort((a, b) => (a.amountOutAtFull > b.amountOutAtFull ? -1 : 1));
   }, [quote]);
 
+  const best = impact[0];
+
   return (
     <>
-      <div className="page-head">
-        <h1 className="page-title">Depth</h1>
-        <p className="page-sub">
-          Effective price against trade size, quoted live from each pool. Where two lines cross
-          is the size at which the best venue changes — and the reason a router splits at all.
-        </p>
-      </div>
+      <PageHead
+        title="Depth"
+        lede="What size costs, venue by venue. Where two lines cross is where the best venue changes."
+      />
 
-      <section className="section">
-        <div className="section-head">
-          <h2 className="sec-label">Pair</h2>
-          <div className="section-meta flex items-center gap-2">
-            <TokenSelect value={inSym} onChange={setInSym} tokens={TOKENS} exclude={outSym} />
-            <span className="mut">→</span>
-            <TokenSelect value={outSym} onChange={setOutSym} tokens={TOKENS} exclude={inSym} />
-            <span className="seg" style={{ marginLeft: 10 }}>
-              {SIZES.map((s) => (
-                <button
-                  key={s}
-                  className={`range-btn${amount === s ? ' on' : ''}`}
-                  onClick={() => setAmount(s)}
-                >
-                  {s}
-                </button>
-              ))}
-            </span>
-          </div>
+      <Card title="Pair and size">
+        <div className="c-controls">
+          <TokenSelect value={inSym} onChange={setInSym} tokens={TOKENS} exclude={outSym} />
+          <span className="c-arrow">→</span>
+          <TokenSelect value={outSym} onChange={setOutSym} tokens={TOKENS} exclude={inSym} />
+          <Segmented
+            label="Size"
+            value={amount}
+            onChange={setAmount}
+            options={SIZES.map((s) => ({ value: s, label: s }))}
+          />
         </div>
+        {error && <ErrorNote>{error}</ErrorNote>}
+      </Card>
 
-        {error && <div className="err">{error}</div>}
-        {loading && !quote && <div className="empty">Quoting every venue…</div>}
+      {loading && !quote ? (
+        <Card title="Quoting every venue">
+          <Loading rows={3} />
+        </Card>
+      ) : quote ? (
+        <>
+          <Card
+            title={`Cost of trading ${amount} ${inSym}`}
+            step={1}
+            meta={<span className="mono">block {quote.blockNumber.toString()}</span>}
+          >
+            {best && (
+              <Answers>
+                <Answer
+                  label="Best venue"
+                  value={sig(best.amountOutAtFull, tokenOut)}
+                  unit={tokenOut.symbol}
+                  size="xl"
+                  note={best.venue.label}
+                />
+                <Answer
+                  label="Price impact"
+                  value={best.impactBps.toFixed(1)}
+                  unit="bp"
+                  tone={best.impactBps < -100 ? 'bad' : best.impactBps < -30 ? 'warn' : 'good'}
+                  note="at this size, on the best venue"
+                />
+                <Answer
+                  label="Venues quoted"
+                  value={quote.venues.length}
+                  note={`${quote.venues.filter((v) => v.multiHop).length} via an intermediate`}
+                />
+              </Answers>
+            )}
 
-        {quote && (
-          <>
-            <DepthChart venues={quote.venues} tokenIn={tokenIn} tokenOut={tokenOut} />
-            <div className="legend mt-3">
+            <div style={{ marginTop: 18 }}>
+              <DepthChart venues={quote.venues} tokenIn={tokenIn} tokenOut={tokenOut} />
+            </div>
+
+            <div className="c-legend">
               {quote.venues.slice(0, 5).map((v, i) => (
                 <span key={v.venue.id}>
                   <span className={`leg-dot ${SERIES_CLASS[i % 5]}`} />
@@ -103,50 +132,53 @@ export function DepthView() {
                 </span>
               ))}
             </div>
-            <p className="mt-2" style={{ fontSize: 12, color: 'var(--ink-3)' }}>
-              X axis is trade size in {tokenIn.symbol}, log-spaced. Y axis is {tokenOut.symbol}{' '}
-              received per {tokenIn.symbol}, windowed to the top 45% of the price range so a
-              drained pool cannot flatten the venues that matter.
-            </p>
-          </>
-        )}
-      </section>
 
-      <section className="section">
-        <div className="section-head">
-          <h2 className="sec-label">
-            Price impact at {amount} {inSym}
-          </h2>
-        </div>
-        {impact.length === 0 ? (
-          <div className="empty">No venues quoted.</div>
-        ) : (
-          <div className="scroll-x">
-            <table>
-              <thead>
-                <tr>
-                  <th>Venue</th>
-                  <th className="num">Output</th>
-                  <th className="num">Impact</th>
-                </tr>
-              </thead>
-              <tbody>
-                {impact.map((r) => (
-                  <tr key={r.venue.id}>
-                    <td>{r.venue.label}</td>
-                    <td className="num mono">
-                      {sig(r.amountOutAtFull, tokenOut)} {tokenOut.symbol}
-                    </td>
-                    <td className={`num mono ${r.impactBps < -50 ? 'dn' : 'mut'}`}>
-                      {bps(r.impactBps)}
-                    </td>
+            <Reveal summary="How do I read this?">
+              <p>
+                Horizontal is trade size in {tokenIn.symbol}, log-spaced. Vertical is{' '}
+                {tokenOut.symbol} received per {tokenIn.symbol} — so a line sloping down means
+                bigger trades get a worse price, which every pool does.
+              </p>
+              <p>
+                The window is clipped to the top of the price range. A drained pool quotes orders
+                of magnitude below the real price and would otherwise flatten every venue that
+                matters into a single line.
+              </p>
+            </Reveal>
+          </Card>
+
+          <Card title="Every venue at this size" step={2}>
+            <div className="c-scroll">
+              <table className="c-table">
+                <thead>
+                  <tr>
+                    <th>Venue</th>
+                    <th className="num">Receives</th>
+                    <th className="num">Impact</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {impact.map((r) => (
+                    <tr key={r.venue.id}>
+                      <td>{r.venue.label}</td>
+                      <td className="num mono">
+                        {sig(r.amountOutAtFull, tokenOut)} {tokenOut.symbol}
+                      </td>
+                      <td className={`num mono ${r.impactBps < -50 ? 'dn' : 'mut'}`}>
+                        {bps(r.impactBps)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
+      ) : (
+        <Card title="Depth">
+          <Empty>No quote yet.</Empty>
+        </Card>
+      )}
     </>
   );
 }

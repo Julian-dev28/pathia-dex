@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Token } from '@/lib/chain';
 import { sig } from '@/lib/format';
+import { Card, Chip, Empty } from './ui';
 
 type Tick = {
   blockNumber: string;
@@ -100,52 +101,39 @@ export function LiveTape({
   };
 
   return (
-    <section className="section">
-      <div className="section-head">
-        <h2 className="sec-label">Live tape</h2>
-        <span className="section-meta">
-          <span className={`pill${status === 'live' ? '' : status === 'closed' ? ' offline' : ' stale'}`}>
-            {label[status]}
-          </span>
-        </span>
-      </div>
-
+    <Card
+      title="Live price"
+      meta={
+        <Chip tone={status === 'live' ? 'good' : status === 'closed' ? 'mut' : 'warn'}>
+          {label[status]}
+        </Chip>
+      }
+    >
       {ticks.length === 0 ? (
-        <div className="empty">
-          Waiting for the next block that moves this price. The stream only pushes when the
-          quote actually changes.
-        </div>
+        <Empty>Waiting for a block that moves this price.</Empty>
       ) : (
-        <div className="tape">
+        <div>
           {ticks.map((t, i) => {
             const prev = ticks[i + 1];
             const delta = prev ? BigInt(t.amountOut) - BigInt(prev.amountOut) : 0n;
             return (
-              <div className="tape-line" key={`${t.blockNumber}-${t.at}`}>
-                <span className="mono mut">{t.blockNumber}</span>
+              <div className="c-tick" key={`${t.blockNumber}-${t.at}`}>
+                <span className={`c-tick-dir ${delta > 0n ? 'up' : delta < 0n ? 'dn' : 'mut'}`}>
+                  {prev ? (delta > 0n ? '▲' : delta < 0n ? '▼' : '·') : '·'}
+                </span>
                 <span className="mono">
                   {sig(BigInt(t.amountOut), tokenOut, 7)} {tokenOut.symbol}
                 </span>
-                <span className={`mono ${delta > 0n ? 'up' : delta < 0n ? 'dn' : 'mut'}`}>
-                  {prev ? (delta > 0n ? '▲' : delta < 0n ? '▼' : '·') : ''}
-                </span>
-                <span className="mut" style={{ fontSize: 11.5 }}>
-                  {t.path.join(' → ')}
-                </span>
-                <span className="mut" style={{ fontSize: 11.5, marginLeft: 'auto' }}>
-                  {t.venue}
-                </span>
+                <span className="mono mut">{t.blockNumber}</span>
               </div>
             );
           })}
         </div>
       )}
-
-      <p className="mt-2" style={{ fontSize: 12, color: 'var(--ink-3)' }}>
-        Server-sent events, coalesced to at most one quote every six seconds and skipped entirely
-        when the price has not moved. This tape is for watching; the trade form keeps its own
-        quote with an explicit expiry, so what you sign is never something that changed under you.
+      <p className="c-empty" style={{ marginTop: 10 }}>
+        Only pushed when the price actually changes. This is for watching — the trade form keeps
+        its own quote with an expiry, so what you sign never changes under you.
       </p>
-    </section>
+    </Card>
   );
 }
