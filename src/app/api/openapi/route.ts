@@ -23,7 +23,7 @@ export async function GET() {
   return NextResponse.json({
     openapi: '3.1.0',
     info: {
-      title: 'Pathia DEX',
+      title: 'PATHIA DEX',
       version: '0.3.0',
       description:
         'On-chain route solver for Base. Quotes every venue from pool state and solves the ' +

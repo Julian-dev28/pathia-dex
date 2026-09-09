@@ -1,4 +1,4 @@
-# Pathia DEX
+# PATHIA DEX
 
 An on-chain route solver for Base. It quotes every major venue directly from
 pool state — direct pools and two-hop routes alike — solves the optimal split

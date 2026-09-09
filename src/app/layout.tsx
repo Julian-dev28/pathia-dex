@@ -12,21 +12,21 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   metadataBase: new URL('https://pathia-dex.vercel.app'),
   title: {
-    default: 'Pathia DEX — on-chain route solver for Base',
-    template: '%s — Pathia DEX',
+    default: 'PATHIA DEX — on-chain route solver for Base',
+    template: '%s — PATHIA DEX',
   },
   description: DESCRIPTION,
-  applicationName: 'Pathia DEX',
+  applicationName: 'PATHIA DEX',
   keywords: ['Base', 'DEX', 'router', 'Uniswap', 'Aerodrome', 'swap', 'DeFi'],
   openGraph: {
     type: 'website',
-    title: 'Pathia DEX — on-chain route solver for Base',
+    title: 'PATHIA DEX — on-chain route solver for Base',
     description: DESCRIPTION,
-    siteName: 'Pathia DEX',
+    siteName: 'PATHIA DEX',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Pathia DEX',
+    title: 'PATHIA DEX',
     description: DESCRIPTION,
   },
   robots: { index: true, follow: true },

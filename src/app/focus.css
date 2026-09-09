@@ -241,8 +241,8 @@
   display: flex; align-items: center; gap: 20px; min-height: 54px;
 }
 .c-brand {
-  font-size: 14px; font-weight: 600; letter-spacing: 0.16em;
-  text-transform: lowercase; color: var(--bar-ink); white-space: nowrap;
+  font-size: 14px; font-weight: 600; letter-spacing: 0.18em;
+  color: var(--bar-ink); white-space: nowrap;
 }
 .c-brand:hover { text-decoration: none; }
 

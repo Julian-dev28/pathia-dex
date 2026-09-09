@@ -40,7 +40,7 @@ export function Masthead() {
     <header className="c-bar">
       <div className="c-bar-in">
         <Link href="/" className="c-brand">
-          pathia
+          PATHIA
         </Link>
 
         <nav className="c-nav" aria-label="Sections">
