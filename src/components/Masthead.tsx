@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi';
 import type { Connector } from 'wagmi';
+import { injected } from '@wagmi/core';
+import type { EIP1193Provider } from 'viem';
 import { base } from 'wagmi/chains';
 import { addr } from '@/lib/format';
 import { ThemeToggle } from './ThemeToggle';
@@ -36,18 +38,10 @@ function rpcCode(error: unknown): number | undefined {
   return undefined;
 }
 
-/**
- * Wallet failures are routine and each one wants a different reaction.
- *
- * A wallet that rejects without ever prompting reports the same 4001 as a
- * person clicking "cancel" in a window they did see, so the message says what
- * to check rather than asserting which of the two happened.
- */
+/** Wallet failures are routine and each one wants a different reaction. */
 function connectMessage(error: Error): string {
   const code = rpcCode(error);
-  if (code === 4001) {
-    return 'Wallet rejected the request (4001). If no window opened, the site may be blocked in the wallet’s connected-sites list.';
-  }
+  if (code === 4001) return 'Declined in the wallet.';
   if (code === -32002) return 'A connection request is already open — check the wallet.';
 
   const first = error.message.split('\n')[0];
@@ -70,6 +64,10 @@ export function Masthead() {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<Connector | null>(null);
 
+  // The provider object each wallet announced, kept from the probe so the
+  // connect path below can address that exact extension without asking again.
+  const providers = useRef(new Map<string, EIP1193Provider>());
+
   /**
    * Which wallets are actually here.
    *
@@ -84,7 +82,12 @@ export function Masthead() {
 
     (async () => {
       const probed = await Promise.all(
-        connectors.map(async (c) => ((await c.getProvider().catch(() => null)) ? c : null)),
+        connectors.map(async (c) => {
+          const provider = await c.getProvider().catch(() => null);
+          if (!provider) return null;
+          providers.current.set(c.uid, provider as EIP1193Provider);
+          return c;
+        }),
       );
       if (!live) return;
 
@@ -106,13 +109,37 @@ export function Masthead() {
 
   const pick = (connector: Connector) => {
     setPending(connector);
+
+    const provider = providers.current.get(connector.uid);
+
+    /**
+     * Connect through a connector built here rather than the discovered one.
+     *
+     * wagmi builds discovered connectors as `injected({ target })`, and
+     * `injected` defaults `shimDisconnect` to true, which opens the connection
+     * with `wallet_requestPermissions`. OKX rejects that method outright
+     * instead of prompting, and the connector rethrows the 4001 before it ever
+     * reaches `eth_requestAccounts` — an instant refusal with no window, which
+     * is what this looked like from the outside. Rebuilding the same target
+     * with the shim off takes the path every injected wallet implements.
+     *
+     * The cost is that disconnecting no longer re-prompts for account
+     * selection, because that prompt *is* `wallet_requestPermissions`.
+     */
+    const target = provider
+      ? injected({
+          target: { id: connector.id, name: connector.name, icon: connector.icon, provider },
+          shimDisconnect: false,
+        })
+      : connector;
+
     // Deliberately no chainId. wagmi's injected connector rethrows a rejected
     // switchChain (connectors/injected.js), so asking for Base here turns a
     // declined network prompt into a failed connection with the accounts
     // already approved. Connect first; the masthead's "Switch to Base" button
     // handles the chain afterwards, where declining costs nothing.
     connect(
-      { connector },
+      { connector: target },
       {
         onSuccess: () => {
           setOpen(false);
