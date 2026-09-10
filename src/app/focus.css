@@ -492,3 +492,32 @@
 .c-tick:last-child { border-bottom: 0; }
 .c-tick-dir { width: 12px; text-align: center; }
 .c-tick .mut { margin-left: auto; font-size: 12px; }
+
+/* ── account panel: balances and fills (demo builds only) ─────────────── */
+
+.c-total {
+  display: flex; align-items: baseline; gap: 10px;
+  padding-bottom: 12px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+}
+.c-total-value { font-size: 26px; letter-spacing: -0.02em; color: var(--ink); }
+.c-total-label { font-size: 12px; color: var(--ink-3); }
+
+.c-holding {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 7px 0; font-size: 13px;
+  border-bottom: 1px solid var(--rule);
+}
+.c-holding:last-child { border-bottom: 0; }
+.c-holding-sym { width: 62px; color: var(--ink-2); }
+.c-holding .mut { margin-left: auto; font-size: 12px; }
+
+.c-fill {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 7px 0; font-size: 13px;
+  border-bottom: 1px solid var(--rule);
+}
+.c-fill:last-child { border-bottom: 0; }
+.c-fill-pair { width: 132px; color: var(--ink-2); }
+.c-fill-edge { color: var(--up); font-size: 12px; }
+.c-fill .mut:last-child { margin-left: auto; font-size: 12px; }

@@ -16,6 +16,7 @@ import { buildSwap, approveTx, spenderFor, minOut, ERC20 } from '@/lib/execute';
 import { TokenSelect } from './TokenSelect';
 import { RoutePath } from './RoutePath';
 import { LiveTape } from './LiveTape';
+import { AccountPanel } from './AccountPanel';
 import {
   Card,
   Answer,
@@ -507,6 +508,8 @@ export function Terminal() {
           <LiveTape inSym={inSym} outSym={outSym} amount={amount} tokenOut={tokenOut} />
         </div>
       )}
+
+      <AccountPanel />
 
       <p className="c-foot-note">
         Unaudited. Trades execute through Uniswap&rsquo;s and Aerodrome&rsquo;s own audited
