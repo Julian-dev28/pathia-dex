@@ -8,7 +8,7 @@ import { base } from 'wagmi/chains';
 // connector, so we import the one.
 import { injected } from '@wagmi/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { RPC_URLS } from '@/lib/chain';
 
 /**
@@ -33,6 +33,16 @@ declare module 'wagmi' {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  // wagmi skips EIP-6963 discovery entirely when `ssr` is set, and drops late
+  // announcements until its storage has hydrated (see createConfig). Wallets
+  // announce themselves during exactly that window, so with two extensions
+  // installed the only connector left is the generic one, pointing at whichever
+  // of them won the race for window.ethereum. Asking again after mount arrives
+  // after hydration, so each wallet registers as its own named connector.
+  useEffect(() => {
+    window.dispatchEvent(new Event('eip6963:requestProvider'));
+  }, []);
+
   // One client per mount, not a module singleton: a shared client leaks one
   // user's cached quotes into the next request under SSR.
   const [queryClient] = useState(
