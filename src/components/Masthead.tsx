@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi';
 import type { Connector } from 'wagmi';
 import { base } from 'wagmi/chains';
 import { addr } from '@/lib/format';
 import { ThemeToggle } from './ThemeToggle';
+import { WalletModal } from './WalletModal';
 
 /**
  * Trade first, everything else after.
@@ -27,19 +28,37 @@ const NAV = [
   { href: '/docs', label: 'Method' },
 ];
 
-/** Wallet failures are routine and each one wants a different reaction. */
+/** EIP-1193 rejection. 4001 is the user declining; -32002 is one already open. */
+function rpcCode(error: unknown): number | undefined {
+  const e = error as { code?: unknown; cause?: unknown };
+  if (typeof e?.code === 'number') return e.code;
+  if (e?.cause) return rpcCode(e.cause);
+  return undefined;
+}
+
+/**
+ * Wallet failures are routine and each one wants a different reaction.
+ *
+ * A wallet that rejects without ever prompting reports the same 4001 as a
+ * person clicking "cancel" in a window they did see, so the message says what
+ * to check rather than asserting which of the two happened.
+ */
 function connectMessage(error: Error): string {
+  const code = rpcCode(error);
+  if (code === 4001) {
+    return 'Wallet rejected the request (4001). If no window opened, the site may be blocked in the wallet’s connected-sites list.';
+  }
+  if (code === -32002) return 'A connection request is already open — check the wallet.';
+
   const first = error.message.split('\n')[0];
-  if (/rejected|denied/i.test(first)) return 'Rejected in wallet';
-  if (/provider|not found|not detected/i.test(first)) return 'Wallet unavailable';
-  if (/pending|already processing/i.test(first)) return 'Check your wallet';
-  return first.length > 56 ? `${first.slice(0, 56)}…` : first;
+  if (/provider|not found|not detected/i.test(first)) return 'That wallet is no longer available.';
+  return first.length > 120 ? `${first.slice(0, 120)}…` : first;
 }
 
 export function Masthead() {
   const pathname = usePathname();
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending, error, reset } = useConnect();
+  const { connect, connectors, error, reset } = useConnect();
   const { disconnect } = useDisconnect();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
@@ -48,8 +67,8 @@ export function Masthead() {
   // installed, and rendering "No wallet" while still looking tells the visitor
   // something false for as long as it takes to find out.
   const [wallets, setWallets] = useState<readonly Connector[] | null>(null);
-  const [picking, setPicking] = useState(false);
-  const wrap = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState<Connector | null>(null);
 
   /**
    * Which wallets are actually here.
@@ -85,10 +104,29 @@ export function Masthead() {
 
   const wrongChain = isConnected && chainId !== base.id;
 
-  const start = (connector: Connector) => {
+  const pick = (connector: Connector) => {
+    setPending(connector);
+    // The chain goes out with the connection rather than as a switch request
+    // afterwards, so an approval and a network prompt are not two windows the
+    // visitor has to answer in the right order.
+    connect(
+      { connector, chainId: base.id },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          setPending(null);
+        },
+        // The dialog stays open on failure: the error belongs next to the
+        // wallet that produced it, and the next thing the visitor wants is
+        // another attempt or a different wallet.
+        onError: () => setPending(null),
+      },
+    );
+  };
+
+  const openPicker = () => {
     reset();
-    setPicking(false);
-    connect({ connector });
+    setOpen(true);
   };
 
   return (
@@ -113,11 +151,6 @@ export function Masthead() {
 
         <div className="c-bar-right">
           <ThemeToggle />
-          {error && !isPending && !isConnected ? (
-            <span className="c-wallet-err" role="status">
-              {connectMessage(error)}
-            </span>
-          ) : null}
           {wrongChain ? (
             <button className="c-wallet warn" onClick={() => switchChain({ chainId: base.id })}>
               Switch to Base
@@ -131,44 +164,25 @@ export function Masthead() {
               No wallet
             </button>
           ) : (
-            <div
-              className="c-wallet-wrap"
-              ref={wrap}
-              onBlur={(e) => {
-                if (!wrap.current?.contains(e.relatedTarget as Node | null)) setPicking(false);
-              }}
-              onKeyDown={(e) => e.key === 'Escape' && setPicking(false)}
-            >
-              <button
-                className="c-wallet"
-                disabled={isPending}
-                aria-haspopup={(wallets && wallets.length > 1) || undefined}
-                aria-expanded={wallets && wallets.length > 1 ? picking : undefined}
-                onClick={() => {
-                  // A click landing before the probe resolves is a few
-                  // milliseconds after mount. Connecting through the configured
-                  // connector is what the button did before it could name
-                  // wallets, and it beats swallowing the click.
-                  if (!wallets) return connectors[0] && start(connectors[0]);
-                  return wallets.length === 1 ? start(wallets[0]) : setPicking((p) => !p);
-                }}
-              >
-                {isPending ? 'Connecting…' : 'Connect'}
-              </button>
-
-              {picking && wallets && wallets.length > 1 ? (
-                <ul className="c-wallet-menu">
-                  {wallets.map((c) => (
-                    <li key={c.uid}>
-                      <button onClick={() => start(c)}>{c.name}</button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
+            <button className="c-wallet" onClick={openPicker} aria-haspopup="dialog">
+              {pending ? 'Connecting…' : 'Connect'}
+            </button>
           )}
         </div>
       </div>
+
+      {open && wallets && wallets.length > 0 ? (
+        <WalletModal
+          wallets={wallets}
+          pending={pending}
+          error={error ? connectMessage(error) : null}
+          onPick={pick}
+          onClose={() => {
+            setOpen(false);
+            setPending(null);
+          }}
+        />
+      ) : null}
     </header>
   );
 }
