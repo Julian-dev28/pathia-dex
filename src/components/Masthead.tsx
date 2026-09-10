@@ -44,7 +44,10 @@ export function Masthead() {
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
 
-  const [wallets, setWallets] = useState<readonly Connector[]>([]);
+  // null until the probe below has run: the server cannot know what is
+  // installed, and rendering "No wallet" while still looking tells the visitor
+  // something false for as long as it takes to find out.
+  const [wallets, setWallets] = useState<readonly Connector[] | null>(null);
   const [picking, setPicking] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
 
@@ -123,7 +126,7 @@ export function Masthead() {
             <button className="c-wallet" onClick={() => disconnect()} title="Disconnect">
               <span className="mono">{addr(address!)}</span>
             </button>
-          ) : wallets.length === 0 ? (
+          ) : wallets?.length === 0 ? (
             <button className="c-wallet" disabled title="No wallet extension found in this browser">
               No wallet
             </button>
@@ -139,14 +142,21 @@ export function Masthead() {
               <button
                 className="c-wallet"
                 disabled={isPending}
-                aria-haspopup={wallets.length > 1 || undefined}
-                aria-expanded={wallets.length > 1 ? picking : undefined}
-                onClick={() => (wallets.length === 1 ? start(wallets[0]) : setPicking((p) => !p))}
+                aria-haspopup={(wallets && wallets.length > 1) || undefined}
+                aria-expanded={wallets && wallets.length > 1 ? picking : undefined}
+                onClick={() => {
+                  // A click landing before the probe resolves is a few
+                  // milliseconds after mount. Connecting through the configured
+                  // connector is what the button did before it could name
+                  // wallets, and it beats swallowing the click.
+                  if (!wallets) return connectors[0] && start(connectors[0]);
+                  return wallets.length === 1 ? start(wallets[0]) : setPicking((p) => !p);
+                }}
               >
                 {isPending ? 'Connecting…' : 'Connect'}
               </button>
 
-              {picking && wallets.length > 1 ? (
+              {picking && wallets && wallets.length > 1 ? (
                 <ul className="c-wallet-menu">
                   {wallets.map((c) => (
                     <li key={c.uid}>
