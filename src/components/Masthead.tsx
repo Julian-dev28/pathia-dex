@@ -106,11 +106,13 @@ export function Masthead() {
 
   const pick = (connector: Connector) => {
     setPending(connector);
-    // The chain goes out with the connection rather than as a switch request
-    // afterwards, so an approval and a network prompt are not two windows the
-    // visitor has to answer in the right order.
+    // Deliberately no chainId. wagmi's injected connector rethrows a rejected
+    // switchChain (connectors/injected.js), so asking for Base here turns a
+    // declined network prompt into a failed connection with the accounts
+    // already approved. Connect first; the masthead's "Switch to Base" button
+    // handles the chain afterwards, where declining costs nothing.
     connect(
-      { connector, chainId: base.id },
+      { connector },
       {
         onSuccess: () => {
           setOpen(false);
