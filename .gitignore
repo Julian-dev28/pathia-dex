@@ -14,3 +14,4 @@ next-env.d.ts
 
 # Backtest output is committed on purpose (see src/lib/dataset.ts); only the
 # ad-hoc bench snapshot is not.
+.env*
