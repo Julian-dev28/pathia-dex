@@ -464,6 +464,72 @@ defence against a distributed attacker, and the code says so.
 503 when the head goes stale — a health check that only proves the web process
 is up was never answering the question.
 
+## MCP
+
+The router is also a [Model Context Protocol](https://modelcontextprotocol.io)
+server, at `https://pathia-dex.vercel.app/api/mcp` (Streamable HTTP, no auth).
+
+```
+claude mcp add --transport http pathia-dex https://pathia-dex.vercel.app/api/mcp
+```
+
+| Tool | Does |
+|---|---|
+| `list_tokens` | Every token it can route, with address and decimals |
+| `get_quote` | Best single venue, split comparison, price impact, block |
+| `build_swap` | Unsigned approve + swap transactions for a given wallet |
+
+`build_swap` signs nothing and sends nothing. It returns calldata for the
+caller's wallet, with the same rules as the interface: exact approvals, an
+on-chain minimum-output floor, and a refusal on price impact worse than 3%
+unless `acceptHighImpact` is set. It checks the wallet's balance and allowance
+first, and omits the approval when one is already in place. It shares the quote
+endpoint's cache and rate limit.
+
+### Trading from Claude, with your own key
+
+The hosted server will never accept a private key. To let Claude execute
+trades, run the same tools locally over stdio: `scripts/mcp.ts` reads
+`PATHIA_PRIVATE_KEY` from `.env.local` (gitignored) or the environment, and adds
+two tools.
+
+| Tool | Does |
+|---|---|
+| `get_wallet` | The trading address, its ETH for gas, and its token balances |
+| `swap` | Quotes, approves the exact amount if needed, swaps, waits for confirmation, reports what arrived |
+
+`swap` applies the same guards as `build_swap`, and dry-runs the swap before
+sending it so a trade that would revert costs nothing. Use a dedicated wallet
+holding only what you intend to trade — whatever can call the tool can spend it.
+
+```
+# .env.local
+PATHIA_PRIVATE_KEY=0x...
+```
+
+Claude Code:
+
+```
+claude mcp add pathia-trade -- node /path/to/pathia-dex/node_modules/tsx/dist/cli.mjs /path/to/pathia-dex/scripts/mcp.ts
+```
+
+Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`).
+Desktop does not inherit your shell's `PATH`, so give `node` by absolute path
+(`which node`):
+
+```json
+{
+  "mcpServers": {
+    "pathia-trade": {
+      "command": "/opt/homebrew/bin/node",
+      "args": ["/path/to/pathia-dex/node_modules/tsx/dist/cli.mjs", "/path/to/pathia-dex/scripts/mcp.ts"]
+    }
+  }
+}
+```
+
+Without a key the local server runs read-only, the same as the hosted one.
+
 **On latency.** A cold quote takes 2.4s on a deep pair and about 4s on a
 long-tail one. That is three sequential network stages — discovery, then
 reserves and pruning together, then the ladder — against a free public endpoint
@@ -508,6 +574,8 @@ src/lib/chain.ts        every address, every venue, as data — V2 forks and V3 
 src/lib/execute.ts      calldata for each venue's router, single and multi-hop
 src/lib/gas.ts          gas priced in the output token, no oracle
 src/lib/serve.ts        cache with coalescing, rate limit
+src/lib/solve.ts        one quote end to end, shared by /api/quote and /api/mcp
+src/lib/mcp.ts          MCP tools; signing tools only when given a local account
 src/lib/exposure.ts     sandwich exposure, drift measured from Swap logs
 src/lib/arb.ts          round-trip search, capacity, fragmentation
 src/lib/backtest.ts     log decoding, trade replay, summary statistics
@@ -516,7 +584,7 @@ src/lib/log.ts          structured logging and in-process metrics
 src/lib/cycle.ts        Bellman-Ford negative-cycle search over the rate graph
 src/components/ui.tsx   the interface vocabulary: cards, answers, disclosure
 src/app/focus.css       the attention layer
-src/app/api/            quote, analyze, cycles, venues, stream (SSE), health, metrics, openapi
+src/app/api/            quote, analyze, cycles, venues, stream (SSE), health, metrics, openapi, mcp
 data/backtest.jsonl     append-only dataset, written by the scheduled worker
 contracts/src           SplitRouter.sol — written, tested, not deployed
 contracts/test          prediction-vs-fill, split router, gas profile
