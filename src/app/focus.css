@@ -40,11 +40,14 @@
   border: 1px solid var(--rule);
   border-radius: 6px;
   margin-bottom: 14px;
-  overflow: hidden;
 }
+/* No `overflow: hidden` on the card: it clipped the token picker's popover at
+   the card edge. The header rounds its own corners instead (6px less the 1px
+   border). */
 .c-head {
   display: flex; align-items: center; gap: 10px;
   padding: 12px 16px;
+  border-radius: 5px 5px 0 0;
   border-bottom: 1px solid var(--rule);
   background: var(--surface-2);
 }
