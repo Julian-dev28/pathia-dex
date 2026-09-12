@@ -13,10 +13,9 @@
 
 import { NextResponse } from 'next/server';
 import { bySymbol, TOKENS } from '@/lib/chain';
-import { client, quoteLadder, ladder, bestRoute, interpolate, isMultiHop } from '@/lib/quote';
-import { hopCostInToken, gasPriceWei, GAS_PER_EXTRA_HOP } from '@/lib/gas';
 import { toBase, jsonSafe } from '@/lib/format';
-import { quoteCache, quoteLimit, clientKey, QUOTE_TTL_MS } from '@/lib/serve';
+import { quoteLimit, clientKey, QUOTE_TTL_MS } from '@/lib/serve';
+import { solveQuote } from '@/lib/solve';
 import { log, metrics } from '@/lib/log';
 
 export const revalidate = 0;
@@ -63,53 +62,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'amount must be greater than zero' }, { status: 400 });
     }
 
-    const key = `${tokenIn.symbol}:${tokenOut.symbol}:${amountIn}`;
     const started = Date.now();
-
-    const { value, hit } = await quoteCache.get(key, async () => {
-      const sizes = ladder(amountIn);
-      // The block is read alongside the quotes rather than after them, so the
-      // number reported is the height the prices belong to. Provenance is the
-      // whole product here; "roughly now" is not good enough.
-      const gasWei = await gasPriceWei();
-
-      // The gas conversion does not depend on the route, so it goes out with
-      // the ladder rather than after it. Awaiting it separately added a full
-      // round trip to every quote.
-      const [curves, blockNumber, hopCost] = await Promise.all([
-        quoteLadder(tokenIn, tokenOut, sizes),
-        client().getBlockNumber(),
-        hopCostInToken(tokenOut, gasWei),
-      ]);
-
-      if (curves.length === 0) return null;
-
-      const best = bestRoute(curves, amountIn, hopCost);
-
-      return {
-        tokenIn,
-        tokenOut,
-        amountIn,
-        blockNumber,
-        gas: {
-          gasPriceWei: gasWei,
-          gasPerExtraHop: GAS_PER_EXTRA_HOP,
-          hopCostInOutputToken: hopCost,
-          // A zero hop cost means the ETH→output conversion was unavailable,
-          // not that gas is free. The UI must say which comparison it is
-          // showing rather than presenting a pre-gas number as net.
-          gasAdjusted: hopCost > 0n,
-        },
-        route: best,
-        venues: curves.map((c) => ({
-          venue: c.venue,
-          gasEstimate: c.gasEstimate,
-          amountOutAtFull: interpolate(c, amountIn),
-          multiHop: isMultiHop(c.venue),
-          rungs: c.rungs,
-        })),
-      };
-    });
+    const { value, hit } = await solveQuote(tokenIn, tokenOut, amountIn);
 
     if (!value) {
       metrics.inc('quote.no_liquidity');
