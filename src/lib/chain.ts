@@ -101,6 +101,16 @@ export const TOKENS: Token[] = [
   { symbol: 'DEGEN', name: 'Degen', address: '0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed', decimals: 18 },
   { symbol: 'BRETT', name: 'Brett', address: '0x532f27101965dd16442E59d40670FaF5eBB142E4', decimals: 18 },
   { symbol: 'VIRTUAL', name: 'Virtual Protocol', address: '0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b', decimals: 18 },
+  // Coinbase tokenized stocks (B20 precompiles, listed at base.org/stocks). Only
+  // those with a Uniswap or PancakeSwap V3 pool: MSTRc, SNDKc and TSLAc had none
+  // this router can reach.
+  { symbol: 'NVDAc', name: 'NVIDIA Corporation', address: '0xb20000000000000000000078ee7ce2fE4908108C', decimals: 8 },
+  { symbol: 'AAPLc', name: 'Apple Inc.', address: '0xb200000000000000000000C2e324d24d7eEcd1fb', decimals: 8 },
+  { symbol: 'GOOGLc', name: 'Alphabet Inc.', address: '0xb2000000000000000000002D0BA3164cc74f58B7', decimals: 8 },
+  { symbol: 'SPCXc', name: 'Space Exploration Technologies Corp.', address: '0xb2000000000000000000007b9fcbd005511aCBd5', decimals: 8 },
+  { symbol: 'AMZNc', name: 'Amazon.com Inc.', address: '0xb200000000000000000000d9192b6B456483C2E8', decimals: 8 },
+  { symbol: 'MSFTc', name: 'Microsoft Corporation', address: '0xB200000000000000000000Ab99cFa739E253872B', decimals: 8 },
+  { symbol: 'METAc', name: 'Meta Platforms Inc.', address: '0xb2000000000000000000008bC8786B856E61707C', decimals: 8 },
 ];
 
 export const WETH: Token = TOKENS[0];
