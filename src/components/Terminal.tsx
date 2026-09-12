@@ -19,7 +19,6 @@ import { LiveTape } from './LiveTape';
 import { AccountPanel } from './AccountPanel';
 import {
   Card,
-  Answer,
   Reveal,
   Chip,
   Suggest,
@@ -235,8 +234,15 @@ export function Terminal() {
         </button>
       </div>
 
-      {/* ── 1 · what you pay ────────────────────────────────────────── */}
-      <Card title="You pay" step={1}>
+      {/* ── 1 · the pair ─────────────────────────────────────────────── */}
+      {/* The standard two-slot layout: what leaves the wallet on top, what
+          arrives underneath, the flip between them. */}
+      <Card
+        title="Swap"
+        step={1}
+        meta={quote ? <span className="mono">block {quote.blockNumber.toString()}</span> : undefined}
+      >
+        <div className="c-slot-label">You pay</div>
         <div className="c-field">
           <input
             className="c-amount"
@@ -266,45 +272,49 @@ export function Terminal() {
           ) : (
             <span>Connect a wallet to see your balance</span>
           )}
+        </div>
+
+        <div className="c-flip-row">
           <button
-            className="c-ghost"
+            className="c-flip"
             type="button"
+            aria-label="Flip pay and receive tokens"
             onClick={() => {
               setInSym(outSym);
               setOutSym(inSym);
             }}
           >
-            ⇅ Flip
+            ⇅
           </button>
         </div>
-      </Card>
 
-      {/* ── 2 · what you get ────────────────────────────────────────── */}
-      <Card
-        title="You receive"
-        step={2}
-        meta={quote ? <span className="mono">block {quote.blockNumber.toString()}</span> : undefined}
-      >
-        {loading && !quote ? (
-          <Loading rows={2} />
-        ) : error ? (
-          <ErrorNote onRetry={runQuote}>{error}</ErrorNote>
-        ) : !quote ? (
-          <Empty>Enter an amount above.</Empty>
+        <div className="c-slot-label">You receive</div>
+        <div className="c-field">
+          <output className={`c-amount${quote ? '' : ' c-t-mut'}`} aria-label={`${tokenOut.symbol} received`}>
+            {quote ? sig(quote.route.single.amountOut, tokenOut) : '0.0'}
+          </output>
+          <TokenSelect value={outSym} onChange={setOutSym} tokens={TOKENS} exclude={inSym} />
+        </div>
+
+        {!quote ? (
+          <div style={{ marginTop: 12 }}>
+            {loading ? (
+              <Loading rows={2} />
+            ) : error ? (
+              <ErrorNote onRetry={runQuote}>{error}</ErrorNote>
+            ) : (
+              <Empty>Enter an amount above.</Empty>
+            )}
+          </div>
         ) : (
           <>
-            <Answer
-              label={`${tokenOut.symbol} received`}
-              value={sig(quote.route.single.amountOut, tokenOut)}
-              size="xl"
-              note={
-                execVenue ? (
-                  <>
-                    via {execVenue.label} · <RoutePath venue={execVenue} />
-                  </>
-                ) : undefined
-              }
-            />
+            {execVenue && (
+              <div className="c-field-foot">
+                <span>
+                  via {execVenue.label} · <RoutePath venue={execVenue} />
+                </span>
+              </div>
+            )}
 
             <div className="c-guarantee">
               <span>
@@ -321,10 +331,10 @@ export function Terminal() {
         )}
       </Card>
 
-      {/* ── 3 · the one risk worth acting on ────────────────────────── */}
+      {/* ── 2 · the one risk worth acting on ────────────────────────── */}
       <Card
         title="Slippage"
-        step={3}
+        step={2}
         tone={highImpact ? (severeImpact ? 'bad' : 'warn') : 'default'}
         meta={
           quote ? (
