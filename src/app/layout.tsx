@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Providers } from './providers';
 import { Masthead } from '@/components/Masthead';
 import { ThemeScript } from '@/components/ThemeToggle';
-import './pathia.css';
+import './pathiel.css';
 import './router.css';
 import './focus.css';
 
@@ -10,23 +10,23 @@ const DESCRIPTION =
   'Quotes every major Base venue directly from pool state, solves the optimal split across them, and executes through the venues own audited routers. No aggregator API, no keys.';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://pathia-dex.vercel.app'),
+  metadataBase: new URL('https://pathiel-dex.vercel.app'),
   title: {
-    default: 'PATHIA DEX — on-chain route solver for Base',
-    template: '%s — PATHIA DEX',
+    default: 'PATHIEL DEX — on-chain route solver for Base',
+    template: '%s — PATHIEL DEX',
   },
   description: DESCRIPTION,
-  applicationName: 'PATHIA DEX',
+  applicationName: 'PATHIEL DEX',
   keywords: ['Base', 'DEX', 'router', 'Uniswap', 'Aerodrome', 'swap', 'DeFi'],
   openGraph: {
     type: 'website',
-    title: 'PATHIA DEX — on-chain route solver for Base',
+    title: 'PATHIEL DEX — on-chain route solver for Base',
     description: DESCRIPTION,
-    siteName: 'PATHIA DEX',
+    siteName: 'PATHIEL DEX',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PATHIA DEX',
+    title: 'PATHIEL DEX',
     description: DESCRIPTION,
   },
   robots: { index: true, follow: true },

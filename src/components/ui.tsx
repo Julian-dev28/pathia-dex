@@ -22,7 +22,7 @@ import { useEffect, useId, useState } from 'react';
 /**
  * A bounded chunk with a visible edge.
  *
- * pathia's own register uses hairline rules and no boxes, which reads
+ * pathiel's own register uses hairline rules and no boxes, which reads
  * beautifully as a document and poorly as a set of separate decisions. A
  * visible boundary is what lets someone leave the page, come back, and find
  * their place without re-reading.
@@ -258,7 +258,7 @@ export function useFocusMode(): [boolean, () => void] {
 
   useEffect(() => {
     try {
-      setFocus(localStorage.getItem('pathia-focus') === '1');
+      setFocus(localStorage.getItem('pathiel-focus') === '1');
     } catch {
       /* storage can be unavailable; the default is fine */
     }
@@ -268,7 +268,7 @@ export function useFocusMode(): [boolean, () => void] {
     setFocus((f) => {
       const next = !f;
       try {
-        localStorage.setItem('pathia-focus', next ? '1' : '0');
+        localStorage.setItem('pathiel-focus', next ? '1' : '0');
       } catch {
         /* per-visit only, then */
       }

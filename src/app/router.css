@@ -1,9 +1,9 @@
 /* ============================================================================
-   base-router — additions to the pathia design system
+   base-router — additions to the pathiel design system
    ----------------------------------------------------------------------------
-   Only what the router needs and pathia does not already have: the trade form,
+   Only what the router needs and pathiel does not already have: the trade form,
    the split-allocation bar, and the depth chart frame. Everything else — rules,
-   tables, badges, figures — comes from pathia.css unchanged, and any colour
+   tables, badges, figures — comes from pathiel.css unchanged, and any colour
    below is a token from it rather than a new value.
    ========================================================================= */
 

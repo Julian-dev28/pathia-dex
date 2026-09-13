@@ -1,4 +1,4 @@
-# PATHIA DEX
+# PATHIEL DEX
 
 An on-chain route solver for Base. It quotes every major venue directly from
 pool state — direct pools and two-hop routes alike — solves the optimal split
@@ -16,7 +16,7 @@ npm run predict                   # quote a set of trades, pin the block
 cd contracts && forge test        # replay them on a fork, compare
 ```
 
-It is also an MCP server — hosted at `https://pathia-dex.vercel.app/api/mcp`
+It is also an MCP server — hosted at `https://pathiel-dex.vercel.app/api/mcp`
 for quotes, and locally with your own key for trading from Claude. See [MCP](#mcp).
 
 ---
@@ -471,10 +471,10 @@ is up was never answering the question.
 ## MCP
 
 The router is also a [Model Context Protocol](https://modelcontextprotocol.io)
-server, at `https://pathia-dex.vercel.app/api/mcp` (Streamable HTTP, no auth).
+server, at `https://pathiel-dex.vercel.app/api/mcp` (Streamable HTTP, no auth).
 
 ```
-claude mcp add --transport http pathia-dex https://pathia-dex.vercel.app/api/mcp
+claude mcp add --transport http pathiel-dex https://pathiel-dex.vercel.app/api/mcp
 ```
 
 | Tool | Does |
@@ -494,7 +494,7 @@ endpoint's cache and rate limit.
 
 The hosted server will never accept a private key. To let Claude execute
 trades, run the same tools locally over stdio: `scripts/mcp.ts` reads
-`PATHIA_PRIVATE_KEY` from `.env.local` (gitignored) or the environment, and adds
+`PATHIEL_PRIVATE_KEY` from `.env.local` (gitignored) or the environment, and adds
 two tools.
 
 | Tool | Does |
@@ -508,13 +508,13 @@ holding only what you intend to trade — whatever can call the tool can spend i
 
 ```
 # .env.local
-PATHIA_PRIVATE_KEY=0x...
+PATHIEL_PRIVATE_KEY=0x...
 ```
 
 Claude Code:
 
 ```
-claude mcp add pathia-trade -- node /path/to/pathia-dex/node_modules/tsx/dist/cli.mjs /path/to/pathia-dex/scripts/mcp.ts
+claude mcp add pathiel-trade -- node /path/to/pathiel-dex/node_modules/tsx/dist/cli.mjs /path/to/pathiel-dex/scripts/mcp.ts
 ```
 
 Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`).
@@ -524,9 +524,9 @@ Desktop does not inherit your shell's `PATH`, so give `node` by absolute path
 ```json
 {
   "mcpServers": {
-    "pathia-trade": {
+    "pathiel-trade": {
       "command": "/opt/homebrew/bin/node",
-      "args": ["/path/to/pathia-dex/node_modules/tsx/dist/cli.mjs", "/path/to/pathia-dex/scripts/mcp.ts"]
+      "args": ["/path/to/pathiel-dex/node_modules/tsx/dist/cli.mjs", "/path/to/pathiel-dex/scripts/mcp.ts"]
     }
   }
 }

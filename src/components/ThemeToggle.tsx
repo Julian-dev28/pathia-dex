@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 type Theme = 'dark' | 'light';
-const KEY = 'pathia-theme';
+const KEY = 'pathiel-theme';
 
 /**
  * Dark by default, light on request.

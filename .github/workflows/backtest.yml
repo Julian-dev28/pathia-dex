@@ -53,7 +53,7 @@ jobs:
             echo "no new samples recorded"
             exit 0
           fi
-          git config user.name  "pathia-bot"
+          git config user.name  "pathiel-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data/backtest.jsonl
           RUNS=$(wc -l < data/backtest.jsonl | tr -d ' ')

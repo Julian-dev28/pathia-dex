@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const BASE = 'https://pathia-dex.vercel.app';
+const BASE = 'https://pathiel-dex.vercel.app';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return ['', '/depth', '/venues', '/docs'].map((path) => ({

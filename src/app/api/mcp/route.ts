@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const handler = createMcpHandler((server) => registerTools(server), {
-  serverInfo: { name: 'pathia-dex', version: '0.1.0' },
+  serverInfo: { name: 'pathiel-dex', version: '0.1.0' },
 });
 
 /** The quote endpoint's limit, so an agent cannot spend the RPC budget a person needs. */
