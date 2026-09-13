@@ -16,6 +16,9 @@ npm run predict                   # quote a set of trades, pin the block
 cd contracts && forge test        # replay them on a fork, compare
 ```
 
+It is also an MCP server — hosted at `https://pathia-dex.vercel.app/api/mcp`
+for quotes, and locally with your own key for trading from Claude. See [MCP](#mcp).
+
 ---
 
 ## The claim, and the test that checks it
@@ -183,8 +186,9 @@ instrument. The rules now:
   figure; every explanation is a closed `<details>` one tap away. Nothing was
   deleted — the rigour is the point — it is just no longer in the way.
 - **Nothing sits between the number and the button.** The trade page is a
-  numbered sequence: what you pay, what you get, the one risk worth acting on,
-  then a single full-width action. Everything else lives below a visible break
+  numbered sequence: the swap itself — pay and receive as two slots in one
+  card, each with its own token picker and a flip between them — then the one
+  risk worth acting on, then a single full-width action. Everything else lives below a visible break
   and can be hidden entirely with one toggle that persists.
 - **Nothing moves unless movement is the information.** The live block counter
   is gone from the masthead; the price tape only emits when the price actually
@@ -552,8 +556,17 @@ for that is a paid endpoint via `RPC_URL`, not more code.
 - **Fee-on-transfer tokens are unsupported.** The quote assumes the amount sent
   is the amount the pool receives.
 - **Public RPC rate-limits.** Set `RPC_URL` for anything beyond casual use.
-- **Twelve tokens.** Adding more is a line in `src/lib/chain.ts`; discovery does
-  not care.
+- **Twenty-two tokens.** Majors (WETH, cbBTC, USDC, USDT, SOL, cbXRP), Base
+  staples and long-tail tokens, and seven Coinbase tokenized stocks (NVDAc,
+  AAPLc, GOOGLc, SPCXc, AMZNc, MSFTc, METAc). Adding more is a line in
+  `src/lib/chain.ts`; discovery does not care, but a token is only listed once
+  it has a pool this router can reach — MSTRc, SNDKc and TSLAc do not yet.
+- **Tokenized stocks carry the issuer's restrictions.** Coinbase offers them
+  only in eligible jurisdictions outside the US. This router reads pools and
+  builds calldata; it does not check who is trading.
+- **The MCP `swap` tool's send path is not fork-tested.** The transactions it
+  signs are the ones `build_swap` returns, which are simulated against mainnet;
+  the send, wait and report steps around them are not yet covered by a test.
 - **The backtest sample is small and recent.** Public RPC serves roughly three
   thousand blocks of logs and a few thousand blocks of historical state, so each
   run samples the last few hours. Depth accumulates across scheduled runs rather
